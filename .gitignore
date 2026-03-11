@@ -110,3 +110,4 @@ yarn-error.*
 
 # @end expo-cli.expo/
 .expo/
+.expo/

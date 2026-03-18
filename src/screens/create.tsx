@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -23,41 +26,52 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Video } from 'react-native-compressor';
 import { Ionicons } from "@expo/vector-icons";
 import { Member, ProgramStep, LetsTalkRoom } from './LetsTalkTypes';
-import { getStorage } from "firebase/storage";
 
-export const storage = getStorage(app);
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../firebaseConfig"; // adjust path
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { app } from "../firebaseConfig"; // adjust path
 
-const uploadFile = async (uri: string, folder: string) => {
-  const response = await fetch(uri);
-  const blob = await response.blob();
 
-  const filename = uri.substring(uri.lastIndexOf("/") + 1);
-  const storageRef = ref(storage, `${folder}/${Date.now()}_${filename}`);
+const storage = getStorage(app);
 
-  const uploadTask = uploadBytesResumable(storageRef, blob);
+export const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
+  try {
+    // Fetch the file from the local uri
+    const response = await fetch(uri);
+    const blob = await response.blob();
 
-  return new Promise((resolve, reject) => {
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+    // Generate a unique filename
+    const filename = uri.substring(uri.lastIndexOf("/") + 1);
+    const storageRef = ref(storage, `${folder}/${Date.now()}_${filename}`);
 
-        setUploadProgress(progress); // REAL PROGRESS HERE
-      },
-      (error) => {
-        console.log("Upload error:", error);
-        reject(error);
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        resolve(downloadURL);
-      }
-    );
-  });
+    // Upload the file
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+
+    return new Promise((resolve, reject) => {
+      uploadTask.on(
+        "state_changed",
+        snapshot => {
+          // Optional: track progress
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Upload is ${progress}% done`);
+        },
+        error => {
+          console.error("Upload failed:", error);
+          reject(error);
+        },
+        async () => {
+          // Get the download URL when upload completes
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        }
+      );
+    });
+  } catch (error) {
+    console.error("Error fetching file:", error);
+    return null;
+  }
 };
+
+
 const generateThumbnail = async (uri: string) => {
   try {
     const { uri: thumbnail } = await VideoThumbnails.getThumbnailAsync(uri, {

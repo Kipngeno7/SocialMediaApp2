@@ -1,12 +1,21 @@
-export default function LetsTalkRoom() {
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Image,
+} from "react-native";
+import { Member } from './LetsTalkTypes';
+import { fetchMembers } from '../services/memberService'; // make sure this path is correct
 
+export default function LetsTalkRoom() {
   const hostId = "host123";
   const currentUserId = "user999";
 
   /* ===============================
      STATE
   =============================== */
-
   const [countdown, setCountdown] = useState<number>(0);
   const [scheduledTime] = useState<number>(Date.now() + 7200000);
 
@@ -14,23 +23,26 @@ export default function LetsTalkRoom() {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [talkQueue, setTalkQueue] = useState<string[]>([]);
   const [aiMessage, setAiMessage] = useState<string>(
-    "Welcome to Let's Talk 🎙"
+    "Welcome to Let's Talk  ^=^n^y"
   );
 
   /* ===============================
      LOAD MEMBERS (PAGINATION)
   =============================== */
-
   const loadMembers = async () => {
-    const snapshot = await fetchMembers("room123", lastDoc);
+    try {
+      const snapshot = await fetchMembers("room123", lastDoc);
 
-    const newMembers = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Member[];
+      const newMembers = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Member[];
 
-    setMembers(prev => [...prev, ...newMembers]);
-    setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      setMembers(prev => [...prev, ...newMembers]);
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+    } catch (err) {
+      console.error("Error loading members:", err);
+    }
   };
 
   useEffect(() => {
@@ -40,7 +52,6 @@ export default function LetsTalkRoom() {
   /* ===============================
      COUNTDOWN TIMER
   =============================== */
-
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
@@ -54,7 +65,6 @@ export default function LetsTalkRoom() {
   /* ===============================
      SPEAK SYSTEM
   =============================== */
-
   const requestToSpeak = () => {
     if (!talkQueue.includes(currentUserId)) {
       setTalkQueue(prev => [...prev, currentUserId]);
@@ -74,7 +84,7 @@ export default function LetsTalkRoom() {
 
     const speaker = members.find(m => m.id === userId);
     setAiMessage(
-      `Next speaker is ${speaker?.name}. Please begin 🎤`
+      `Next speaker is ${speaker?.name}. Please begin  ^=^n `
     );
   };
 
@@ -98,7 +108,6 @@ export default function LetsTalkRoom() {
   /* ===============================
      UI
   =============================== */
-
   return (
     <View style={{ flex: 1, padding: 15 }}>
 
@@ -118,7 +127,7 @@ export default function LetsTalkRoom() {
         }}
       >
         <Text style={{ fontWeight: "bold" }}>
-          🤖 AI Program Assistant
+           ^= ^v AI Program Assistant
         </Text>
         <Text>{aiMessage}</Text>
       </View>
@@ -152,8 +161,8 @@ export default function LetsTalkRoom() {
             />
             <Text>{item.name}</Text>
 
-            {item.isVIP && <Text>✔ VIP</Text>}
-            {item.hasMic && <Text>🎤</Text>}
+            {item.isVIP && <Text> ^|^t VIP</Text>}
+            {item.hasMic && <Text> ^=^n </Text>}
           </TouchableOpacity>
         )}
       />
@@ -162,7 +171,7 @@ export default function LetsTalkRoom() {
       {currentUserId !== hostId && (
         <TouchableOpacity onPress={requestToSpeak}>
           <Text style={{ color: "blue", marginTop: 15 }}>
-            ✋ Raise Hand
+             ^|^k Raise Hand
           </Text>
         </TouchableOpacity>
       )}
@@ -171,7 +180,7 @@ export default function LetsTalkRoom() {
       {currentUserId === hostId && talkQueue.length > 0 && (
         <View style={{ marginTop: 20 }}>
           <Text style={{ fontWeight: "bold" }}>
-            🔔 Speaking Requests:
+             ^=^t^t Speaking Requests:
           </Text>
 
           {talkQueue.map((id) => {
@@ -199,11 +208,6 @@ export default function LetsTalkRoom() {
     </View>
   );
 }
-
-  
-
-   
-
 
 
 

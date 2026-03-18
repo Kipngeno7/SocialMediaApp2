@@ -90,52 +90,80 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     await updateDoc(typingRef, { typing: false });
   };
 
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      quality: 0.7,
-    });
-    if (!result.cancelled) {
-      const response = await fetch(result.uri);
-      const blob = await response.blob();
-      await sendMessage(chatId, currentUserId!, null, blob, result.type as 'image' | 'video');
-    }
-  };
+  
+
+// Async helper to send media files
+const handleSendMedia = async (uri: string, type: 'image' | 'video') => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    await sendMessage(chatId, currentUserId!, null, blob, type);
+  } catch (err) {
+    console.error('Error sending media:', err);
+  }
+};
+
+// Updated handlePickImage function
+const handlePickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    quality: 0.7,
+  });
+
+  if (!result.cancelled) {
+    await handleSendMedia(result.uri, result.type as 'image' | 'video');
+  }
+};
 
   // Audio recording
-  const startRecording = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
-      await newRecording.startAsync();
-      setRecording(newRecording);
-      setIsRecording(true);
-    } catch (err) {
-      console.log('Failed to start recording', err);
-    }
-  };
+  
 
-  const stopRecording = async () => {
-    if (!recording) return;
-    try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI()!;
-      setIsRecording(false);
-      setRecording(null);
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      await sendMessage(chatId, currentUserId!, null, blob, 'audio');
-    } catch (err) {
-      console.log('Stop recording error', err);
-    }
-  };
 
-  const playAudio = async (uri: string) => {
-    const { sound } = await Audio.Sound.createAsync({ uri });
-    await sound.playAsync();
-  };
+// Helper to send audio files
+const handleSendAudio = async (uri: string) => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    await sendMessage(chatId, currentUserId!, null, blob, 'audio');
+  } catch (err) {
+    console.error('Error sending audio:', err);
+  }
+};
+
+// Audio recording
+const startRecording = async () => {
+  try {
+    await Audio.requestPermissionsAsync();
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+    const newRecording = new Audio.Recording();
+    await newRecording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+    await newRecording.startAsync();
+    setRecording(newRecording);
+    setIsRecording(true);
+  } catch (err) {
+    console.log('Failed to start recording', err);
+  }
+};
+
+const stopRecording = async () => {
+  if (!recording) return;
+  try {
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI()!;
+    setIsRecording(false);
+    setRecording(null);
+
+    // Send audio using async wrapper
+    await handleSendAudio(uri);
+  } catch (err) {
+    console.log('Stop recording error', err);
+  }
+};
+
+const playAudio = async (uri: string) => {
+  const { sound } = await Audio.Sound.createAsync({ uri });
+  await sound.playAsync();
+};
 
   // Edit/Delete message
   const handleEdit = async (msgId: string) => {

@@ -16,7 +16,9 @@ import { auth, db } from '../firebaseConfig';
 import { doc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import SkeletonContent from 'react-native-skeleton-content';
-import { blockUser, unblockUser, checkIfBlocked } from '../services/blockServ';
+
+
+import { blockUser, unblockUser, checkIfBlocked } from '../services/blockService';
 import { useTranslation } from 'react-i18next';
 
 // <-- Step 1: Import upgraded social functions
@@ -30,7 +32,8 @@ import database from '@react-native-firebase/database';
 
 type UserProfileRouteProp = RouteProp<{ UserProfile: { userId: string } }, 'UserProfile'>;
 
-export default function UserProfileScreen() {
+
+export default function ProfileScreen() {
   const route = useRoute<UserProfileRouteProp>();
   const { userId } = route.params;
   const { t } = useTranslation();

@@ -6,10 +6,31 @@ import { db } from '../firebaseConfig';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 /**
+ * Async wrapper for sending Expo push notifications
+ */
+const sendPushNotification = async (token: string, title: string, body: string) => {
+  try {
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: token,
+        sound: 'default',
+        title,
+        body,
+      }),
+    });
+  } catch (err) {
+    console.error('Error sending push notification:', err);
+  }
+};
+
+/**
  * Request permission and get Expo push token for a user
  */
 export async function registerForPushNotificationsAsync(userId: string) {
   let token;
+
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -28,7 +49,11 @@ export async function registerForPushNotificationsAsync(userId: string) {
     token = tokenData.data;
 
     // Save token in Firestore under the user
-    await setDoc(doc(db, 'users', userId), { expoPushToken: token }, { merge: true });
+    await setDoc(
+      doc(db, 'users', userId),
+      { expoPushToken: token },
+      { merge: true }
+    );
   } else {
     alert('Must use a physical device for push notifications!');
   }
@@ -39,39 +64,39 @@ export async function registerForPushNotificationsAsync(userId: string) {
 /**
  * Send push notification for new follow
  */
-export const sendFollowNotification = async (userId: string, followerName: string) => {
+export const sendFollowNotification = async (
+  userId: string,
+  followerName: string
+) => {
   const userSnap = await getDoc(doc(db, 'users', userId));
   const userData = userSnap.data();
 
   if (!userData?.expoPushToken) return;
 
-  await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: userData.expoPushToken,
-      title: 'New Follower',
-      body: `${followerName} started following you`,
-    }),
-  });
+  // Use the new async helper
+  await sendPushNotification(
+    userData.expoPushToken,
+    'New Follower',
+    `${followerName} started following you`
+  );
 };
 
 /**
  * Send push notification for new post
  */
-export const sendNewPostNotification = async (userId: string, title: string) => {
+export const sendNewPostNotification = async (
+  userId: string,
+  title: string
+) => {
   const userSnap = await getDoc(doc(db, 'users', userId));
   const userData = userSnap.data();
 
   if (!userData?.expoPushToken) return;
 
-  await fetch('https://exp.host/--/api/v2/push/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: userData.expoPushToken,
-      title: 'New Post',
-      body: title,
-    }),
-  });
+  // Use the new async helper
+  await sendPushNotification(
+    userData.expoPushToken,
+    'New Post',
+    title
+  );
 };

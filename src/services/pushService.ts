@@ -1,17 +1,23 @@
+// src/services/pushService.ts
+
 import * as Notifications from 'expo-notifications';
-import * as Permissions from 'expo-permissions';
 import { saveExpoPushToken } from '../firebaseConfig';
 import { auth } from '../firebaseConfig';
 
+/**
+ * Registers the current user for push notifications.
+ * Requests permissions using the modern Expo Notifications API.
+ */
 export const registerForPushNotifications = async () => {
   if (!auth.currentUser) return;
 
   // Check existing permissions
-  const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
+  // Request permissions if not already granted
   if (existingStatus !== 'granted') {
-    const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+    const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 

@@ -3,35 +3,26 @@ import { Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateText } from '../services/translationService';
 
-export default function ChatBubble({ message }){
+export default function ChatBubble({ message }: { message: { text: string } }) {
+  const [translated, setTranslated] = useState('');
 
-  const [translated,setTranslated]=useState("");
-
-  useEffect(()=>{
+  useEffect(() => {
     translateMessage();
-  },[]);
+  }, [message.text]);
 
-  const translateMessage = async ()=>{
-
+  const translateMessage = async () => {
     const lang = await AsyncStorage.getItem('appLanguage');
-    if(!lang) return;
+    if (!lang) return;
 
-    const result = await translateText(message.text,lang);
-
+    const result = await translateText(message.text, lang);
     setTranslated(result);
-
   };
 
-  return(
-
-    <View style={{padding:10}}>
-
-      <Text>
-        {translated || message.text}
-      </Text>
-
+  return (
+    <View style={{ padding: 10 }}>
+      <Text>{translated || message.text}</Text>
     </View>
-
   );
-
 }
+
+

@@ -1,26 +1,37 @@
 // src/navigation/AppNavigator.tsx
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import AuthScreen from '../screens/AuthScreen';
-import HomeScreen from '../screens/HomeScreen';
-import SearchScreen from '../screens/SearchScreen';
-import TrendingScreen from '../screens/TrendingScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import FeedScreen from '../screens/FeedScreen';
-import TermsScreen from '../screens/TermsScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import SettingsScreen from '../screens/SettingsScreen';
 import HelpCentreScreen from '../screens/HelpCentreScreen';
-
-import LiveStreamsFeed from '../screens/LiveStreamsFeed';
+import HomeScreen from '../screens/HomeScreen';
 import LiveStreamScreen from '../screens/LiveStreamScreen';
+import LiveStreamsFeed from '../screens/LiveStreamsFeed';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SearchScreen from '../screens/SearchScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import StreamerDashboard from '../screens/StreamerDashboard';
+import TermsScreen from '../screens/TermsScreen';
+import TrendingScreen from '../screens/TrendingScreen';
+
+/* ----------- CREATE SCREEN IMPORT ----------- */
+
+import CreateScreen from '../screens/create';
+
+/* ----------- NEW IMPORTS (MISSING SCREENS) ----------- */
+
+import BlockedUsersScreen from '../screens/BlockedUsersScreen';
+import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+import LetsTalkRoom from '../screens/LetsTalkRoom';
+import PrivacySettingsScreen from '../screens/PrivacySettingsScreen';
+import WatchLiveScreen from '../screens/WatchLiveScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,6 +56,7 @@ function MainTabs({ navigation }: any) {
           let iconName = '';
 
           if (route.name === 'Home') iconName = 'home-outline';
+          else if (route.name === 'Create') iconName = 'add-circle-outline';
           else if (route.name === 'Trending') iconName = 'trending-up-outline';
           else if (route.name === 'Search') iconName = 'search-outline';
           else if (route.name === 'Notifications') iconName = 'notifications-outline';
@@ -56,6 +68,10 @@ function MainTabs({ navigation }: any) {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+
+      {/* CREATE TAB ADDED */}
+      <Tab.Screen name="Create" component={CreateScreen} />
+
       <Tab.Screen name="Trending" component={TrendingScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
@@ -101,10 +117,10 @@ function AppDrawer() {
   return (
     <Drawer.Navigator
       initialRouteName="Feed"
-      drawerType="slide"
-      drawerStyle={{ width: 280 }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({ navigation }) => ({
+        drawerType: "slide",
+        drawerStyle: { width: 280 },
         headerLeft: () => (
           <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={{ marginLeft: 15 }}>
             <Ionicons name="menu" size={28} color="black" />
@@ -113,7 +129,9 @@ function AppDrawer() {
         headerTitleAlign: 'center',
       })}
     >
+      {/* FINAL MERGED FEED */}
       <Drawer.Screen name="Feed" component={FeedScreen} />
+
       <Drawer.Screen name="Profile" component={ProfileScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
       <Drawer.Screen name="Help Centre" component={HelpCentreScreen} />
@@ -131,7 +149,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Drawer" component={AppDrawer} />
 
       <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen as any} />
 
       <Stack.Screen name="LiveStreamsFeed" component={LiveStreamsFeed} />
       <Stack.Screen name="LiveViewer" component={LiveStreamScreen} />
@@ -144,6 +162,34 @@ export default function AppNavigator() {
         component={StreamerDashboard}
         options={{ title: "Streamer Dashboard" }}
       />
+
+      {/* ----------- NEW SCREENS ADDED TO STACK ----------- */}
+
+      <Stack.Screen
+        name="BlockedUsers"
+        component={BlockedUsersScreen}
+      />
+
+      <Stack.Screen
+        name="LanguageSettings"
+        component={LanguageSettingsScreen}
+      />
+
+      <Stack.Screen
+        name="LetsTalkRoom"
+        component={LetsTalkRoom}
+      />
+
+      <Stack.Screen
+        name="PrivacySettings"
+        component={PrivacySettingsScreen}
+      />
+
+      <Stack.Screen
+        name="WatchLive"
+        component={WatchLiveScreen}
+      />
+
     </Stack.Navigator>
   );
 }

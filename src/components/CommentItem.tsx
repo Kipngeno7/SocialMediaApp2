@@ -3,9 +3,9 @@ import { Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateText } from '../services/translationService';
 
-export default function CommentItem({ comment }) {
+export default function CommentItem({ comment }: { comment: { text: string; user: string } }) {
 
-  const [translated,setTranslated] = useState("");
+  const [translated, setTranslated] = useState<string>("");
 
   useEffect(()=>{
     translateComment();

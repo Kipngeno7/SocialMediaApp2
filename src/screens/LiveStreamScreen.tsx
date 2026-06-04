@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import database from '@react-native-firebase/database';
+// Replace the '@react-native-firebase/database' import with this:
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,8 +27,9 @@ export default function LiveStreamScreen() {
 
   // Fetch the individual stream from Firebase
   useEffect(() => {
-    const ref = database().ref(`liveStreams/${streamId}`);
-    const listener = ref.on('value', snapshot => {
+    const database = getDatabase();
+    const streamRef = ref(database, `liveStreams/${streamId}`);
+    const unsubscribe = onValue(streamRef, snapshot => {
       const data = snapshot.val();
       if (data) {
         setStream({
@@ -41,7 +43,7 @@ export default function LiveStreamScreen() {
       setLoading(false);
     });
 
-    return () => ref.off('value', listener);
+    return unsubscribe;
   }, [streamId]);
 
   if (loading) {

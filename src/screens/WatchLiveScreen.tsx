@@ -16,6 +16,8 @@ import Video from "react-native-video";
 import { Ionicons } from "@expo/vector-icons";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onChildAdded, push, onValue, set } from "firebase/database";
+import { updateProfile } from 'firebase/auth';
+
 import { getAuth, onAuthStateChanged, signInAnonymously, User } from "firebase/auth";
 
 // ---- Firebase configuration ----
@@ -58,11 +60,17 @@ export default function WatchLiveScreen() {
 
   // ---- Sign in anonymously if not logged in ----
   useEffect(() => {
-    onAuthStateChanged(auth, currentUser => {
+    onAuthStateChanged(auth,async currentUser => {
       if (currentUser) {
         // Set default displayName and photoURL if null
-        if (!currentUser.displayName) currentUser.displayName = `User-${currentUser.uid.substring(0,5)}`;
-        if (!currentUser.photoURL) currentUser.photoURL = `https://i.pravatar.cc/150?u=${currentUser.uid}`;
+        if (currentUser) {
+            await updateProfile(currentUser, {
+                displayName: currentUser.displayName || `User-${currentUser.uid.substring(0, 5)}`,
+                    photoURL: currentUser.photoURL || 'https://pravatar.cc'
+                      });
+                      }
+
+        
         setUser(currentUser);
       } else {
         signInAnonymously(auth).catch(console.error);
@@ -72,17 +80,31 @@ export default function WatchLiveScreen() {
 
   // ---- Update viewers on current stream ----
   useEffect(() => {
-    if (!user) return;
-    const viewerRef = ref(db, `viewers/${currentStream.id}/${user.uid}`);
-    set(viewerRef, { 
-      name: user.displayName || `User-${user.uid.substring(0, 5)}`, 
-      photoURL: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`,
-      reactions: 0 
-    });
+      const updateViewers = async () => {
+          if (!user) return;
+              const viewerRef = ref(db, `viewers/${currentStream.id}/${user.uid}`);
+                  await set(viewerRef, {
+                        name: user.displayName || `User-${user.uid.substring(0, 5)}`,
+                              photoURL: user.photoURL || 'https://pravatar.cc',
+                                    reactions: 0
+                                        });
+                                          };
 
-    // Cleanup on unmount or stream change
-    return () => set(viewerRef, null);
-  }, [user, currentStream]);
+                                            updateViewers();
+
+  
+
+    
+
+    // Cleanup on unmount or strea
+    return () => {
+          if (user) {
+                const viewerRef = ref(db, `viewers/${currentStream.id}/${user.uid}`);
+                      set(viewerRef, null);
+                          }
+                            };
+                            }, [user, currentStream]);
+    
 
   // ---- Add reaction (real-time per stream) ----
   const addReaction = (emoji: string) => {

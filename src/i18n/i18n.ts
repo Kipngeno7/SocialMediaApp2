@@ -89,7 +89,7 @@ i18n
   .use(languageDetector as any)
   .use(initReactI18next)
   .init({
-    compatibilityJSON: 'v3',
+    compatibilityJSON: 'v4',
     fallbackLng: 'en',
     resources,
     interpolation: {

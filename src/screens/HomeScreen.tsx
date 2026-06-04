@@ -5,6 +5,15 @@ import PeopleYouMayFollow from '../components/PeopleYouMayFollow';
 import { auth } from '../firebaseConfig';
 import { subscribeToPosts, subscribeToPostUpdates } from '../services/postService';
 import { subscribeToNotifications } from '../services/notificationService';
+interface Post {
+    id: string;
+      title: string;
+        content: string;
+          likesCount: number;
+            commentsCount: number;
+            }
+
+
 
 export default function HomeScreen() {
   const [posts, setPosts] = useState<any[]>([]);

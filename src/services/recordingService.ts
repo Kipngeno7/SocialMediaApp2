@@ -11,7 +11,7 @@ export const startRecording = async () => {
   return recording;
 };
 
-export const stopRecording = async (recording) => {
+export const stopRecording = async (recording: any) => {
   await recording.stopAndUnloadAsync();
   return recording.getURI();
 };

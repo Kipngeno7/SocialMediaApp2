@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated, AsyncStorage } from 'react-native';
+import { Text, TouchableOpacity, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);

@@ -1,137 +1,149 @@
 // src/screens/LiveStreamsFeed.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import database from '@react-native-firebase/database';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 const { height } = Dimensions.get('window');
 
 // Emoji map for categories
 const CATEGORY_EMOJI: Record<string, string> = {
   Political: "🔴",
-  Sports: "🟠",
-  Health: "🟢",
-  "Educational/Philosophical": "🔵",
-  Entertainment: "🌸",
-  Technology: "🟣",
-  Religious: "✝️",
-  "Development/Socioeconomic": "🟤",
-  "Personal/Warm Touch": "💛",
-  "Public Information": "🟦",
-  Other: "⚪",
-  Gaming: "🎮",
-};
+    Sports: "🟠",
+      Health: "🟢",
+        "Educational/Philosophical": "🔵",
+          Entertainment: "🌸",
+            Technology: "🟣",
+              Religious: "🕊️",
+                "Development/Socioeconomic": "🟤",
+                  "Personal/Warm Touch": "💛",
+                    "Public Information": "🔷",
+                      Other: "⚪",
+                        Gaming: "🎮",
+                        };
 
-// Stream type
-type Stream = {
-  id: string;
-  title: string;
-  category: string;
-  viewers: number;
-  isLive: boolean;
-};
+                        // Stream type definition
+                        type Stream = {
+                          id: string;
+                            title: string;
+                              category: string;
+                                viewers: number;
+                                  isLive: boolean;
+                                  };
 
-export default function LiveStreamsFeed() {
-  const navigation = useNavigation();
-  const [streams, setStreams] = useState<Stream[]>([]);
-  const [loading, setLoading] = useState(true);
+                                  // Define your app's stack navigation parameter structure
+                                  type RootStackParamList = {
+                                    LiveStreamsFeed: undefined;
+                                      LiveViewer: { streamId: string };
+                                      };
 
-  // Fetch live streams from Firebase
-  useEffect(() => {
-    const ref = database().ref('liveStreams'); // Path in Firebase
-    const onValueChange = ref.on('value', snapshot => {
-      const data = snapshot.val() || {};
-      const parsedStreams: Stream[] = Object.keys(data).map(key => ({
-        id: key,
-        title: data[key].title,
-        category: data[key].category || 'Other',
-        viewers: data[key].viewers || 0, // viewer count in Firebase
-        isLive: data[key].isLive || false, // live status in Firebase
-      }));
-      setStreams(parsedStreams);
-      setLoading(false);
-    });
+                                      export default function LiveStreamsFeed() {
+                                        // Pass the type definitions into useNavigation
+                                          const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+                                            
+                                              // Re-added the state variables to resolve the errors
+                                                const [streams, setStreams] = useState<Stream[]>([]);
+                                                  const [loading, setLoading] = useState<boolean>(true);
 
-    return () => ref.off('value', onValueChange);
-  }, []);
+                                                    // Fetch live streams from Firebase
+                                                      useEffect(() => {
+                                                          const database = getDatabase();
+                                                              const streamsRef = ref(database, 'liveStreams'); // Path in Firebase
+                                                                  
+                                                                      const unsubscribe = onValue(streamsRef, snapshot => {
+                                                                            const data = snapshot.val() || {};
+                                                                                  const parsedStreams: Stream[] = Object.keys(data).map(key => ({
+                                                                                          id: key,
+                                                                                                  title: data[key].title,
+                                                                                                          category: data[key].category || 'Other',
+                                                                                                                  viewers: data[key].viewers || 0, // viewer count in Firebase
+                                                                                                                          isLive: data[key].isLive || false, // live status in Firebase
+                                                                                                                                }));
+                                                                                                                                      setStreams(parsedStreams);
+                                                                                                                                            setLoading(false);
+                                                                                                                                                });
 
-  const renderItem = ({ item }: { item: Stream }) => {
-    const emoji = CATEGORY_EMOJI[item.category] || '⚪';
-    return (
-      <TouchableOpacity
-        style={styles.streamContainer}
-        onPress={() => navigation.navigate("LiveViewer", { streamId: item.id })}
-      >
-        {/* Live Status and Viewers */}
-        <View style={styles.statusContainer}>
-          <View style={[styles.liveDot, { backgroundColor: item.isLive ? 'red' : 'grey' }]} />
-          <Text style={styles.viewerText}>{item.viewers} viewers</Text>
-        </View>
+                                                                                                                                                    return () => unsubscribe();
+                                                                                                                                                      }, []);
 
-        {/* Stream Title with Category Emoji */}
-        <Text style={styles.title}>
-          {emoji} {item.title}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+                                                                                                                                                        const renderItem = ({ item }: { item: Stream }) => {
+                                                                                                                                                            const emoji = CATEGORY_EMOJI[item.category] || '⚪';
+                                                                                                                                                                return (
+                                                                                                                                                                      <TouchableOpacity
+                                                                                                                                                                              style={styles.streamContainer}
+                                                                                                                                                                                      onPress={() => navigation.navigate("LiveViewer", { streamId: item.id })}
+                                                                                                                                                                                            >
+                                                                                                                                                                                                    {/* Live Status and Viewers */}
+                                                                                                                                                                                                            <View style={styles.statusContainer}>
+                                                                                                                                                                                                                      <View style={[styles.liveDot, { backgroundColor: item.isLive ? 'red' : 'grey' }]} />
+                                                                                                                                                                                                                                <Text style={styles.viewerText}>{item.viewers} viewers</Text>
+                                                                                                                                                                                                                                        </View>
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ color: '#fff', marginTop: 10 }}>Loading live streams...</Text>
-      </View>
-    );
-  }
+                                                                                                                                                                                                                                                {/* Stream Title with Category Emoji */}
+                                                                                                                                                                                                                                                        <Text style={styles.title}>
+                                                                                                                                                                                                                                                                  {emoji} {item.title}
+                                                                                                                                                                                                                                                                          </Text>
+                                                                                                                                                                                                                                                                                </TouchableOpacity>
+                                                                                                                                                                                                                                                                                    );
+                                                                                                                                                                                                                                                                                      };
 
-  return (
-    <FlatList
-      data={streams}
-      renderItem={renderItem}
-      pagingEnabled
-      showsVerticalScrollIndicator={false}
-      keyExtractor={item => item.id}
-    />
-  );
-}
+                                                                                                                                                                                                                                                                                        if (loading) {
+                                                                                                                                                                                                                                                                                            return (
+                                                                                                                                                                                                                                                                                                  <View style={styles.loadingContainer}>
+                                                                                                                                                                                                                                                                                                          <ActivityIndicator size="large" color="#007AFF" />
+                                                                                                                                                                                                                                                                                                                  <Text style={{ color: '#fff', marginTop: 10 }}>Loading live streams...</Text>
+                                                                                                                                                                                                                                                                                                                        </View>
+                                                                                                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                                                                                              }
 
-const styles = StyleSheet.create({
-  streamContainer: {
-    height: height,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    paddingHorizontal: 20,
-  },
-  statusContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  liveDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  viewerText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-});
+                                                                                                                                                                                                                                                                                                                                return (
+                                                                                                                                                                                                                                                                                                                                    <FlatList
+                                                                                                                                                                                                                                                                                                                                          data={streams}
+                                                                                                                                                                                                                                                                                                                                                renderItem={renderItem}
+                                                                                                                                                                                                                                                                                                                                                      pagingEnabled
+                                                                                                                                                                                                                                                                                                                                                            showsVerticalScrollIndicator={false}
+                                                                                                                                                                                                                                                                                                                                                                  keyExtractor={item => item.id}
+                                                                                                                                                                                                                                                                                                                                                                      />
+                                                                                                                                                                                                                                                                                                                                                                        );
+                                                                                                                                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                                                                                                                        const styles = StyleSheet.create({
+                                                                                                                                                                                                                                                                                                                                                                          streamContainer: {
+                                                                                                                                                                                                                                                                                                                                                                              height: height,
+                                                                                                                                                                                                                                                                                                                                                                                  justifyContent: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                      alignItems: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                          backgroundColor: '#000',
+                                                                                                                                                                                                                                                                                                                                                                                              paddingHorizontal: 20,
+                                                                                                                                                                                                                                                                                                                                                                                                },
+                                                                                                                                                                                                                                                                                                                                                                                                  statusContainer: {
+                                                                                                                                                                                                                                                                                                                                                                                                      position: 'absolute',
+                                                                                                                                                                                                                                                                                                                                                                                                          top: 50,
+                                                                                                                                                                                                                                                                                                                                                                                                              left: 20,
+                                                                                                                                                                                                                                                                                                                                                                                                                  flexDirection: 'row',
+                                                                                                                                                                                                                                                                                                                                                                                                                      alignItems: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                                                        },
+                                                                                                                                                                                                                                                                                                                                                                                                                          liveDot: {
+                                                                                                                                                                                                                                                                                                                                                                                                                              width: 12,
+                                                                                                                                                                                                                                                                                                                                                                                                                                  height: 12,
+                                                                                                                                                                                                                                                                                                                                                                                                                                      borderRadius: 6,
+                                                                                                                                                                                                                                                                                                                                                                                                                                          marginRight: 6,
+                                                                                                                                                                                                                                                                                                                                                                                                                                            },
+                                                                                                                                                                                                                                                                                                                                                                                                                                              viewerText: {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  color: '#fff',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                      fontSize: 16,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                          fontWeight: '500',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                              title: {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  color: '#fff',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                      fontSize: 24,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          fontWeight: 'bold',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              textAlign: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  loadingContainer: {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      flex: 1,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          justifyContent: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              alignItems: 'center',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  backgroundColor: '#000',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

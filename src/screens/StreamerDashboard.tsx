@@ -1,13 +1,14 @@
 // src/screens/StreamerDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import database from '@react-native-firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
+
 import axios from 'axios';
 
 const PLAYBACK_ID = "d6a90j5g3fg656l9"; // Your Livepeer playback ID
 const LIVEPEER_API_KEY = "daf34171-2a73-4db5-98bd-1431474417ef"; // Your API key
 
-export default function StreamerDashboard({ route, navigation }) {
+export default function StreamerDashboard({ route, navigation }: any) {
   const { startStreaming, stopStreaming, switchCamera, toggleMic } = route.params;
 
   const [viewerCount, setViewerCount] = useState(0);
@@ -32,21 +33,21 @@ export default function StreamerDashboard({ route, navigation }) {
 
   // Step 2 — Listen for total reactions in real-time
   useEffect(() => {
-    const reactionRef = database().ref(`liveReactions`);
-    const listener = reactionRef.on('value', snapshot => {
+    const reactionRef = ref(getDatabase(), `liveReactions`);
+    const unsubscribe = onValue(reactionRef, snapshot => {
       const data = snapshot.val();
       if (!data) return;
       const count = Object.values(data).filter((r: any) => r).length;
       setTotalReactions(count);
     });
 
-    return () => reactionRef.off('value', listener);
+    return () => unsubscribe();
   }, []);
 
   // Step 3 — Listen for poll updates in real-time
   useEffect(() => {
-    const pollRef = database().ref(`livePolls/${PLAYBACK_ID}`);
-    const listener = pollRef.on('value', snapshot => {
+    const pollRef = ref(getDatabase(), `livePolls/${PLAYBACK_ID}`);
+    const unsubscribe = onValue(pollRef, snapshot => {
       const data = snapshot.val();
       if (!data) return;
       const options = Object.keys(data).map(key => ({
@@ -56,7 +57,7 @@ export default function StreamerDashboard({ route, navigation }) {
       setPoll(options);
     });
 
-    return () => pollRef.off('value', listener);
+    return () => unsubscribe();
   }, []);
 
   // Step 4 — Render dashboard UI
@@ -69,7 +70,9 @@ export default function StreamerDashboard({ route, navigation }) {
       {poll && (
         <View style={{ marginTop: 20 }}>
           <Text style={styles.heading}>Poll Results</Text>
-          {poll.map(option => (
+          {poll.map((option: any) => (
+
+    
             <Text key={option.id} style={styles.stat}>
               Option {option.id}: {option.votes} votes
             </Text>

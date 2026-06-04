@@ -1,10 +1,11 @@
 // src/components/PostCard.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Video } from 'expo-av';
-import { toggleLikePost, addCommentToPost, subscribeToPostUpdates } from '../services/postService';
+import { Video, ResizeMode } from 'expo-av';
+import { subscribeToPostUpdates } from '../services/postService';
 import { auth } from '../firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+const postService: any = require('../services/postService');
 import { translateText } from '../services/translationService';
 
 interface PostCardProps {
@@ -37,13 +38,13 @@ export default function PostCard({ post }: PostCardProps) {
 
   const handleLike = () => {
     if (!auth.currentUser) return;
-    toggleLikePost(post.id, auth.currentUser.uid);
+    postService.toggleLikePost(post.id, auth.currentUser.uid);
   };
 
   const handleComment = () => {
     if (!auth.currentUser) return;
     const comment = prompt('Write a comment:'); // simple prompt for demo
-    if (comment) addCommentToPost(post.id, auth.currentUser.uid, comment);
+    if (comment) postService.addCommentToPost(post.id, auth.currentUser.uid, comment);
   };
 
   return (
@@ -84,7 +85,7 @@ export default function PostCard({ post }: PostCardProps) {
             source={{ uri: currentPost.mediaUrl }}
             style={styles.media}
             useNativeControls
-            resizeMode="contain"
+            resizeMode={'contain' as ResizeMode}
           />
         ) : null
       )}

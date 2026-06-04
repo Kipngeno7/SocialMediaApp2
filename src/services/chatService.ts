@@ -1,4 +1,6 @@
-import { db, storage } from '../firebaseConfig';
+import { db } from '../firebaseConfig';
+import { getStorage } from 'firebase/storage';
+
 import {
   collection,
   doc,
@@ -11,9 +13,16 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const storage = getStorage();
 import { encryptMessage } from './encryption';
 
 import { checkIfBlocked } from './blockService';
+
+
+// ... your app initialization code 
+
+
 
 export const getOrCreateChat = async (user1: string, user2: string): Promise<string> => {
   const chatsRef = collection(db, 'chats');

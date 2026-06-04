@@ -57,7 +57,8 @@ export default function SearchScreen() {
   const renderUserItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.userItem}
-      onPress={() => navigation.navigate('Chat', { otherUserId: item.id })}
+      onPress={() => (navigation as any).navigate('Chat', { otherUserId: item.id })}
+      
     >
       <Image
         source={{ uri: item.avatar || 'https://via.placeholder.com/40' }}

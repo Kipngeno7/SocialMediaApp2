@@ -4,6 +4,8 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { db } from '../firebaseConfig';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore'; // Make sure these are added to your existing firestore imports at the top
+
 
 /**
  * Async wrapper for sending Expo push notifications
@@ -80,6 +82,24 @@ export const sendFollowNotification = async (
     `${followerName} started following you`
   );
 };
+export const subscribeToNotifications = (
+    userId: string,
+      callback: (notifications: any[]) => void
+      ) => {
+        const q = query(
+            collection(db, 'notifications'),
+                where('userId', '==', userId)
+                  );
+
+                    return onSnapshot(q, (snapshot) => {
+                        const notifications: any[] = [];
+                            snapshot.forEach((docSnap) => {
+                                  notifications.push({ id: docSnap.id, ...docSnap.data() });
+                                      });
+                                          callback(notifications);
+                                            });
+                                            };
+
 
 /**
  * Send push notification for new post

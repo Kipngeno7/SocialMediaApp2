@@ -14,6 +14,7 @@ export interface Post {
   likes?: number;
   liked?: boolean;
   comments?: any[];
+  watchTime?: number;
   isLive?: boolean;
   liveStartTime?: number;
   rankScore: number; // Required for sorting

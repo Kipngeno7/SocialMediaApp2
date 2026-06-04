@@ -1,31 +1,67 @@
-// LetsTalkTypes.ts
-
 export type Member = {
-  id: string;
-  name: string;
-  avatar: string;
-  isVIP: boolean;
-  isSpeaking: boolean;
-  hasMic: boolean;
-};
+    id: string;
+      name: string;
+        avatar: string;
+          isVIP: boolean;
+            isSpeaking: boolean;
+              hasMic: boolean;
+                joinedAt?: number;
+                  role?: "host" | "vip" | "member";
+                    requestedToSpeak?: boolean;
+                    };
 
-export type ProgramStep = {
-  topic: string;
-  speakerId: string;
-  estimatedTime: number; // optional
-};
+                    export type ProgramStep = {
+                      topic: string;
+                        speakerId: string;
+                          speakerName?: string;
+                            estimatedTime: number;
+                              completed?: boolean;
+                                order?: number;
+                                };
 
-export type LetsTalkRoom = {
-  id: string;
-  hostId: string;
-  topic: string;
-  scheduledTime: number;      // timestamp
-  countdownActive: boolean;   // for 2h countdown
-  members: Member[];          // all members
-  vipMembers: Member[];       // max 130
-  talkQueue: string[];        // ids requesting mic
-  programSchedule: ProgramStep[];
-  recordingUri?: string;      // saved after meeting ends
-};
-  
+                                export type LetsTalkRoomRecord = {
+                                  id: string;
+                                    hostId: string;
+                                      title: string;
+                                        topic: string;
+                                          scheduledTime: number;
+                                            countdownActive: boolean;
+                                              members: Member[];
+                                                vipMembers: Member[];
+                                                  talkQueue: string[];
+                                                    programSchedule: ProgramStep[];
+                                                      currentSpeakerId?: string;
+                                                        nextSpeakerId?: string;
+                                                          hostFinalRemarks?: boolean;
+                                                            podiumVisible?: boolean;
+                                                              liveCamera?: boolean;
+                                                                likes: number;
+                                                                  comments: RoomComment[];
+                                                                    recordingUri?: string;
+                                                                      createdAt: number;
+                                                                        endedAt?: number;
+                                                                          status: "scheduled" | "live" | "ended";
+                                                                          };
+
+                                                                          export type RoomComment = {
+                                                                            id: string;
+                                                                              text: string;
+                                                                                author: string;
+                                                                                  authorId: string;
+                                                                                    createdAt: number;
+                                                                                    };
+
+                                                                                    export type SpeakRequest = {
+                                                                                      userId: string;
+                                                                                        userName: string;
+                                                                                          requestedAt: number;
+                                                                                          };
+
+                                                                                          export type MicPassEvent = {
+                                                                                            fromId: string | null;
+                                                                                              toId: string | null;
+                                                                                                timestamp: number;
+                                                                                                  isHostFinalRemarks?: boolean;
+                                                                                                  };
+
     

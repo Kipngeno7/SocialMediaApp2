@@ -83,8 +83,17 @@ export default function ChatScreen({ route }: ChatScreenProps) {
 
   const handleSend = async () => {
     if (!text.trim()) return;
-    await sendMessage(chatId, currentUserId!, text, null, null);
-    setText('');
+    await sendMessage(
+        chatId,
+          currentUserId!,
+            otherUserId,
+              text,
+                null,
+                  null
+                  );
+    
+        
+    
     // Update typing status
     const typingRef = doc(db, 'chats', chatId, 'typing', currentUserId!);
     await updateDoc(typingRef, { typing: false });
@@ -97,7 +106,15 @@ const handleSendMedia = async (uri: string, type: 'image' | 'video') => {
   try {
     const response = await fetch(uri);
     const blob = await response.blob();
-    await sendMessage(chatId, currentUserId!, null, blob, type);
+    await sendMessage(
+        chatId,
+          currentUserId!,
+            otherUserId,
+              null,
+                blob,
+                  type
+                  );
+    
   } catch (err) {
     console.error('Error sending media:', err);
   }
@@ -110,10 +127,18 @@ const handlePickImage = async () => {
     quality: 0.7,
   });
 
-  if (!result.cancelled) {
-    await handleSendMedia(result.uri, result.type as 'image' | 'video');
-  }
-};
+  if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+
+        await handleSendMedia(
+            asset.uri,
+                asset.type === 'video' ? 'video' : 'image'
+                  );
+                  }
+  
+    
+  
+
 
   // Audio recording
   
@@ -124,7 +149,14 @@ const handleSendAudio = async (uri: string) => {
   try {
     const response = await fetch(uri);
     const blob = await response.blob();
-    await sendMessage(chatId, currentUserId!, null, blob, 'audio');
+    await sendMessage(
+        chatId,
+          currentUserId!,
+            otherUserId,
+              null,
+                blob,
+                  'audio'
+                  );
   } catch (err) {
     console.error('Error sending audio:', err);
   }
@@ -136,7 +168,10 @@ const startRecording = async () => {
     await Audio.requestPermissionsAsync();
     await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
     const newRecording = new Audio.Recording();
-    await newRecording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+    await newRecording.prepareToRecordAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+    
     await newRecording.startAsync();
     setRecording(newRecording);
     setIsRecording(true);
@@ -205,7 +240,9 @@ const playAudio = async (uri: string) => {
         onEndReached={fetchMoreMessages}
         onEndReachedThreshold={0.2}
         renderItem={({ item }) => {
-          const decryptedText = item.text ? decryptMessage(item.text) : '';
+          const decryptedText = item.text
+            ? decryptMessage(item.text, chatId)
+              : '';
           return (
             <View
               style={[styles.msgContainer, item.senderId === currentUserId ? styles.myMsg : styles.otherMsg]}
@@ -280,3 +317,4 @@ const styles = StyleSheet.create({
   media: { width: 150, height: 150, marginTop: 5, borderRadius: 8 },
   msgActions: { flexDirection: 'row', justifyContent: 'space-between' },
 });
+}

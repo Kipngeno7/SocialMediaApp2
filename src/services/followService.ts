@@ -29,6 +29,21 @@ const sendPushNotification = async (token: string, title: string, body: string) 
     console.error('Error sending push notification:', err);
   }
 };
+export const checkIfFollowing = async (currentUserId: string, targetUserId: string): Promise<boolean> => {
+    try {
+        const followSnap = await getDoc(
+              doc(db, 'following', currentUserId, 'userFollowing', targetUserId)
+                  );
+                      return followSnap.exists();
+                        } catch (error) {
+                            console.error('Error checking follow status:', error);
+                                return false;
+                                  }
+                                  };
+
+
+
+
 
 // FOLLOW USER (UPGRADED)
 export const followUser = async (

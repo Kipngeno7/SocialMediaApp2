@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import ElasticSpring from "./ElasticSpring"; // your custom animation component
+const ElasticSpringAny = ElasticSpring as React.ComponentType<React.PropsWithChildren<{ height: number }>>;
 import { Post } from "../context/PostContext"; // ensure Post type exists
 
 // ✅ Props types
@@ -49,12 +50,12 @@ export default function CommentThread({ post, comments, onAddComment }: CommentT
   }));
 
   const renderComment = ({ item }: { item: Comment }) => (
-    <ElasticSpring>
+    <ElasticSpringAny height={60}>
       <View style={styles.comment}>
         <Text style={styles.user}>{item.user}:</Text>
         <Text style={styles.text}>{item.text}</Text>
       </View>
-    </ElasticSpring>
+    </ElasticSpringAny>
   );
 
   return (

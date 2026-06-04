@@ -147,9 +147,33 @@ export const subscribeToGlobalTrending = (
     callback(posts);
   });
 };
+// Add this to the bottom of src/services/postService.ts
 
 /**
- * Example: Other post-related functions can remain here
- * You can still add subscribeToPosts, toggleLikePost, addCommentToPost
- * All existing logic remains intact.
- */
+ * Subscribe to all posts ordered by creation time
+  */
+  export const subscribeToPosts = (callback: (posts: any[]) => void) => {
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+      
+        return onSnapshot(q, (snapshot) => {
+            const posts: any[] = [];
+                snapshot.forEach((docSnap) => {
+                      posts.push({ id: docSnap.id, ...docSnap.data() });
+                          });
+                              callback(posts);
+                                });
+                                };
+
+                                /**
+                                 * Subscribe to live changes for a single post (likes/comments)
+                                  */
+                                  export const subscribeToPostUpdates = (postId: string, callback: (post: any) => void) => {
+                                    const docRef = doc(db, 'posts', postId);
+                                      
+                                        return onSnapshot(docRef, (docSnap) => {
+                                            if (docSnap.exists()) {
+                                                  callback({ id: docSnap.id, ...docSnap.data() });
+                                                      }
+                                                        });
+                                                        };
+                                                  

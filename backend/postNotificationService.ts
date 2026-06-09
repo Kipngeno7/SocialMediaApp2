@@ -1,6 +1,6 @@
 // postNotificationService.ts
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot, DocumentData } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, DocumentData, getDocs } from 'firebase/firestore';
 import fetch from 'node-fetch';
 
 // Firebase config (same as your app)
@@ -41,7 +41,8 @@ async function sendPushNotification(expoPushToken: string, title: string, body: 
 
 // Function to notify all users
 async function notifyAllUsers(newPostTitle: string) {
-  const usersSnapshot = await db.collection('users').get();
+  const usersCollection = collection(db, 'users');
+  const usersSnapshot = await getDocs(usersCollection);
   usersSnapshot.forEach(async (userDoc: any) => {
     const token = userDoc.data().expoPushToken;
     if (token) {

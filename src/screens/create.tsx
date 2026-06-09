@@ -26,6 +26,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { app } from "../firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
+import { createPost } from '../services/postService';
+
 
 const storage = getStorage(app);
 
@@ -83,7 +85,6 @@ const USER = {
 };
 
 export default function CreatePostScreen() {
-  const { addPost } = usePosts();
   const navigation = useNavigation();
 
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
@@ -101,7 +102,7 @@ export default function CreatePostScreen() {
   const [draft, setDraft] = useState<any>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
-  const CHARACTER_LIMIT = 5000;
+  const CHARACTER_LIMIT = 10000;
   const [imageUris, setImageUris] = useState<string[]>([]);
   const [videoUris, setVideoUris] = useState<string[]>([]);
   const [videoThumbnails, setVideoThumbnails] = useState<{ [key: string]: string }>({});
@@ -236,18 +237,7 @@ export default function CreatePostScreen() {
   const handleGoLive = () => {
     const livePlaceholder = "https://via.placeholder.com/300x200.png?text=LIVE+STREAM";
 
-    addPost({
-      user: USER,
-      text: postText || "🔴 LIVE NOW",
-      category: selectedCategory || "Other",
-      otherCategoryText: selectedCategory === "others" ? customCategory : "",
-      mediaUris: [livePlaceholder],
-      audioUri: null,
-      hashtags,
-      location,
-      visibility,
-      liveStartTime: Date.now(),
-    } as any);
+    createPost("1", postText || "🔴 LIVE NOW", livePlaceholder, location, undefined);
 
     Alert.alert("LIVE started!");
   };
@@ -403,7 +393,7 @@ export default function CreatePostScreen() {
         createdAt: Date.now(),
       };
 
-      addPost(newPost);
+      await createPost("1", postText.trim(), postText.trim(), "US", undefined);
 
       // Reset fields
       setPostText("");

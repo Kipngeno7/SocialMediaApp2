@@ -1,5 +1,7 @@
 // App.tsx
 import React from 'react';
+import 'react-native-url-polyfill/auto';
+
 import { Text, ScrollView } from 'react-native';
 
 import './src/i18n/i18n';

@@ -1,5 +1,39 @@
-import { SymbolView, SymbolViewProps, SymbolWeight } from 'expo-symbols';
+import { ComponentType } from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
+
+type SymbolWeight =
+  | 'ultralight'
+  | 'thin'
+  | 'light'
+  | 'regular'
+  | 'medium'
+  | 'semibold'
+  | 'bold'
+  | 'heavy'
+  | 'black';
+
+type SymbolViewProps = {
+  name: string;
+};
+
+const expoSymbols = require('expo-symbols') as {
+  SymbolView: ComponentType<{
+    weight?: SymbolWeight;
+    tintColor?: string;
+    resizeMode?:
+      | 'cover'
+      | 'contain'
+      | 'stretch'
+      | 'repeat'
+      | 'center'
+      | 'scaleAspectFit'
+      | 'scaleAspectFill';
+    name: string;
+    style?: StyleProp<ViewStyle>;
+  }>;
+};
+
+const SymbolView = expoSymbols.SymbolView;
 
 export function IconSymbol({
   name,

@@ -1,0 +1,17 @@
+{
+    "expo": {
+        "name": "socialmediaapp",
+            "slug": "socialmediaapp",
+                "version": "1.0.0",
+                    "platforms": [
+                          "ios",
+                                "android",
+                                      "web"
+                                          ],
+                                              "plugins": [
+                                                    "expo-router",
+                                                          "expo-web-browser"
+                                                              ]
+                                                                }
+                                                                }
+

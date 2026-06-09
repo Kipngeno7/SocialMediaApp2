@@ -1,6 +1,12 @@
 // functions/src/index.ts
+// Add this as line 1 in src/index.ts
+import 'react-native-url-polyfill/auto';
+import '../config/supabase';
 
+
+// @ts-ignore: firebase-functions types may not be available in the editor environment
 import * as functions from 'firebase-functions';
+// @ts-ignore: firebase-admin types may not be available in the editor environment
 import * as admin from 'firebase-admin';
 import fetch from 'node-fetch';
 
@@ -12,7 +18,7 @@ const db = admin.firestore();
 // ------------------------------
 export const notifyNewPost = functions.firestore
   .document('posts/{postId}')
-  .onCreate(async (snap, context) => {
+  .onCreate(async (snap: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const post = snap.data();
     if (!post) return;
 
@@ -21,10 +27,10 @@ export const notifyNewPost = functions.firestore
 
     // Notify all users except the post creator
     const usersSnap = await db.collection('users').get();
-    usersSnap.forEach(async (userDoc) => {
-      if (userDoc.id === userId) return; // skip self
+    for (const userDoc of usersSnap.docs) {
+      if (userDoc.id === userId) continue; // skip self
       const userData = userDoc.data();
-      if (!userData?.expoPushToken) return;
+      if (!userData?.expoPushToken) continue;
 
       await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
@@ -35,7 +41,7 @@ export const notifyNewPost = functions.firestore
           body: title,
         }),
       });
-    });
+    }
   });
 
 // ------------------------------
@@ -43,7 +49,7 @@ export const notifyNewPost = functions.firestore
 // ------------------------------
 export const notifyLike = functions.firestore
   .document('posts/{postId}/likes/{userId}')
-  .onCreate(async (snap, context) => {
+  .onCreate(async (snap: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const { postId, userId } = context.params;
 
     const postDoc = await db.collection('posts').doc(postId).get();
@@ -73,7 +79,7 @@ export const notifyLike = functions.firestore
 // ------------------------------
 export const notifyComment = functions.firestore
   .document('posts/{postId}/comments/{commentId}')
-  .onCreate(async (snap, context) => {
+  .onCreate(async (snap: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const commentData = snap.data();
     if (!commentData) return;
 

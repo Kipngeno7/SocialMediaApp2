@@ -4,7 +4,10 @@
     "slug": "socialmediaapp",
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
-    "platforms": ["android", "ios"],
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "extra": {
       "eas": {
         "projectId": "2868c864-a24d-47f2-a92a-905d8349a1d2"
@@ -17,6 +20,10 @@
     "ios": {
       "bundleIdentifier": "com.kipngenotuei.socialmediaapp",
       "buildNumber": "1.0.0"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-sharing"
+    ]
   }
 }

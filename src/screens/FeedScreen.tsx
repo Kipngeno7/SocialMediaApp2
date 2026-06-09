@@ -1070,25 +1070,34 @@ const handleSendReply = () => {
 // ─── FeedScreen ────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
-  const { rankedPosts = [], editPost } = usePosts();
+    // 👇 Combine everything into this single line so TypeScript doesn't throw a duplicate error
+      const { rankedPosts = [], editPost, isLoading, fetchPosts } = usePosts();
 
-  // ── Firebase / socket state ───────────────────────────────────────────────────
-  const [socketPosts, setSocketPosts] = useState<any[]>([]);
-  const [popup, setPopup] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [floatingDonations, setFloatingDonations] = useState<
-    {
-      id: string;
-      amount: number;
-      method: string;
-      user: string;
-      animatedValue: Animated.Value;
-    }[]
-  >([]);
-  const [topFans, setTopFans] = useState<{ user: string; total: number }[]>([]);
+        // ── Firebase / socket state ───────────────────────────────────────────
+          const [socketPosts, setSocketPosts] = useState<any[]>([]);
+            const [popup, setPopup] = useState<string | null>(null);
+              const [walletBalance, setWalletBalance] = useState(0);
+                const [floatingDonations, setFloatingDonations] = useState<
+                    {
+                          id: string;
+                                amount: number;
+                                      method: string;
+                                            user: string;
+                                                  animatedValue: Animated.Value;
+                                                      }[]
+                                                        >([]);
+                                                          const [topFans, setTopFans] = useState<{ user: string; total: number }[]>([]);
 
-  const streamerId = "STREAM01";
-  const PLATFORM_CUT = 0.2;
+                                                            const streamerId = "STREAM01";
+                                                              const PLATFORM_CUT = 0.2;
+
+                                                                // ── Feed state ───────────────────────────────────────────
+                                                                  // 👇 Add your mounting hook right here to trigger the sync cleanly
+                                                                    useEffect(() => { 
+                                                                        fetchPosts(); 
+                                                                          }, [fetchPosts]);
+
+
 
   // ── Feed state ────────────────────────────────────────────────────────────────
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);

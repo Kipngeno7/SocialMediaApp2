@@ -67,7 +67,7 @@ export default function ElasticSpring({
       [0, 1],
       ["#bbb", "#00f2ff"]
     );
-    return { stroke: color };
+    return { stroke: color as any };
   });
 
   return (

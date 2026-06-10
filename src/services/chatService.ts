@@ -1,101 +1,203 @@
+// src/services/chatService.ts
 import { db } from '../firebaseConfig';
 import { getStorage } from 'firebase/storage';
-
 import {
   collection,
-  doc,
-  addDoc,
-  query,
-  orderBy,
-  getDocs,
-  onSnapshot,
-  serverTimestamp,
-  updateDoc,
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+    doc,
+      addDoc,
+        query,
+          orderBy,
+            getDocs,
+              onSnapshot,
+                serverTimestamp,
+                  updateDoc,
+                  } from 'firebase/firestore';
+                  import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+                  import { createClient } from '@supabase/supabase-js';
 
-const storage = getStorage();
-import { encryptMessage } from './encryption';
+                  // Import local services and security tools
+                  import { encryptMessage } from './encryption';
+                  import { checkIfBlocked } from './blockService';
 
-import { checkIfBlocked } from './blockService';
+                  const storage = getStorage();
 
+                  // Initialize your Supabase client instance
+                  // import { supabase } from '../supabaseConfig';
+                  const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
 
-// ... your app initialization code 
+                  /**
+                   * Resolves or creates a chat room ID.
+                    * Returns the FIRESTORE chat ID to keep the frontend completely intact.
+                     */
+                     export const getOrCreateChat = async (user1: string, user2: string): Promise<string> => {
+                       // --- FIREBASE PRIMARY OPERATION ---
+                         const chatsRef = collection(db, 'chats');
+                           const q = query(chatsRef);
+                             const snapshot = await getDocs(q);
 
+                               let existingChatId = null;
+                                 for (const docSnap of snapshot.docs) {
+                                     const participants = docSnap.data().participants;
+                                         if (participants.includes(user1) && participants.includes(user2)) {
+                                               existingChatId = docSnap.id;
+                                                     break;
+                                                         }
+                                                           }
 
+                                                             let chatId = existingChatId;
 
-export const getOrCreateChat = async (user1: string, user2: string): Promise<string> => {
-  const chatsRef = collection(db, 'chats');
-  const q = query(chatsRef);
-  const snapshot = await getDocs(q);
+                                                               if (!chatId) {
+                                                                   const newChat = await addDoc(chatsRef, { participants: [user1, user2] });
+                                                                       chatId = newChat.id;
+                                                                         }
 
-  for (const docSnap of snapshot.docs) {
-    const participants = docSnap.data().participants;
-    if (participants.includes(user1) && participants.includes(user2)) return docSnap.id;
-  }
+                                                                           // --- SUPABASE MIRROR OPERATION ---
+                                                                             try {
+                                                                                 // Check if the chat room already exists in Supabase by looking for array overlap
+                                                                                     const { data: sbChat, error: sbSelectError } = await supabase
+                                                                                           .from('chats')
+                                                                                                 .select('id')
+                                                                                                       .contains('participants', [user1, user2])
+                                                                                                             .maybeSingle();
 
-  const newChat = await addDoc(chatsRef, { participants: [user1, user2] });
-  return newChat.id;
-};
+                                                                                                                 if (sbSelectError) throw sbSelectError;
 
-export const sendMessage = async (
-  chatId: string,
-  senderId: string,
-  receiverId: string,
-  text: string | null,
-  mediaFile: any | null,
-  mediaType: 'image' | 'video' | 'audio' | null
-) => {
+                                                                                                                     // If it doesn't exist, create it using the same ID or a new record
+                                                                                                                         if (!sbChat) {
+                                                                                                                               await supabase
+                                                                                                                                       .from('chats')
+                                                                                                                                               .insert([{ participants: [user1, user2] }]);
+                                                                                                                                                   }
+                                                                                                                                                     } catch (sbError) {
+                                                                                                                                                         console.error('Supabase Error in getOrCreateChat:', sbError);
+                                                                                                                                                           }
 
-  // BLOCK CHECK
-  const blockStatus = await checkIfBlocked(senderId, receiverId);
-  if (blockStatus.blocked || blockStatus.blockedBy) {
-    throw new Error('User is blocked');
-  }
+                                                                                                                                                             return chatId;
+                                                                                                                                                             };
 
-  let mediaUrl = null;
+                                                                                                                                                             /**
+                                                                                                                                                              * Sends a chat message, uploads media to Firebase, and mirrors metadata to Supabase.
+                                                                                                                                                               */
+                                                                                                                                                               export const sendMessage = async (
+                                                                                                                                                                 chatId: string,
+                                                                                                                                                                   senderId: string,
+                                                                                                                                                                     receiverId: string,
+                                                                                                                                                                       text: string | null,
+                                                                                                                                                                         mediaFile: any | null,
+                                                                                                                                                                           mediaType: 'image' | 'video' | 'audio' | null
+                                                                                                                                                                           ) => {
+                                                                                                                                                                             // BLOCK CHECK
+                                                                                                                                                                               const blockStatus = await checkIfBlocked(senderId, receiverId);
+                                                                                                                                                                                 if (blockStatus.blocked || blockStatus.blockedBy) {
+                                                                                                                                                                                     throw new Error('User is blocked');
+                                                                                                                                                                                       }
 
-  if (mediaFile) {
-    const storageRef = ref(storage, `chatMedia/${chatId}/${Date.now()}`);
-    await uploadBytes(storageRef, mediaFile);
-    mediaUrl = await getDownloadURL(storageRef);
-  }
+                                                                                                                                                                                         let mediaUrl = null;
 
-  const encryptedText = text ? encryptMessage(text, chatId) : null;
+                                                                                                                                                                                           // Primary upload remains on Firebase Storage to preserve your bandwidth/quotas
+                                                                                                                                                                                             if (mediaFile) {
+                                                                                                                                                                                                 const storageRef = ref(storage, `chatMedia/${chatId}/${Date.now()}`);
+                                                                                                                                                                                                     await uploadBytes(storageRef, mediaFile);
+                                                                                                                                                                                                         mediaUrl = await getDownloadURL(storageRef);
+                                                                                                                                                                                                           }
 
-  await addDoc(collection(db, 'chats', chatId, 'messages'), {
-    senderId,
-    text: encryptedText,
-    mediaUrl,
-    mediaType,
-    timestamp: serverTimestamp(),
-    edited: false,
-    deleted: false,
-  });
-};
+                                                                                                                                                                                                             const encryptedText = text ? encryptMessage(text, chatId) : null;
 
-export const subscribeToChat = (
-  chatId: string,
-  callback: (messages: any[]) => void
-) => {
-  return onSnapshot(
-    query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc')),
-    (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      callback(msgs);
-    }
-  );
-};
+                                                                                                                                                                                                               // --- FIREBASE PRIMARY OPERATION ---
+                                                                                                                                                                                                                 const firebaseMsgRef = await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                                                                                                                                                                                                                     senderId,
+                                                                                                                                                                                                                         text: encryptedText,
+                                                                                                                                                                                                                             mediaUrl,
+                                                                                                                                                                                                                                 mediaType,
+                                                                                                                                                                                                                                     timestamp: serverTimestamp(),
+                                                                                                                                                                                                                                         edited: false,
+                                                                                                                                                                                                                                             deleted: false,
+                                                                                                                                                                                                                                               });
 
-export const editMessage = async (chatId: string, messageId: string, newText: string) => {
-  const msgRef = doc(db, 'chats', chatId, 'messages', messageId);
-  await updateDoc(msgRef, {
-    text: encryptMessage(newText, chatId),
-    edited: true,
-  });
-};
+                                                                                                                                                                                                                                                 // --- SUPABASE MIRROR OPERATION ---
+                                                                                                                                                                                                                                                   try {
+                                                                                                                                                                                                                                                       // First, resolve the internal Supabase uuid for this chat room matching the participants
+                                                                                                                                                                                                                                                           const { data: sbChat } = await supabase
+                                                                                                                                                                                                                                                                 .from('chats')
+                                                                                                                                                                                                                                                                       .select('id')
+                                                                                                                                                                                                                                                                             .contains('participants', [senderId, receiverId])
+                                                                                                                                                                                                                                                                                   .maybeSingle();
 
-export const deleteMessage = async (chatId: string, messageId: string) => {
-  const msgRef = doc(db, 'chats', chatId, 'messages', messageId);
-  await updateDoc(msgRef, { deleted: true });
-};
+                                                                                                                                                                                                                                                                                       if (sbChat) {
+                                                                                                                                                                                                                                                                                             await supabase.from('messages').insert([
+                                                                                                                                                                                                                                                                                                     {
+                                                                                                                                                                                                                                                                                                               firebase_message_id: firebaseMsgRef.id, // linked reference for tracking down updates
+                                                                                                                                                                                                                                                                                                                         chat_id: sbChat.id,
+                                                                                                                                                                                                                                                                                                                                   sender_id: senderId,
+                                                                                                                                                                                                                                                                                                                                             text: encryptedText, // Mirrors securely encrypted string 
+                                                                                                                                                                                                                                                                                                                                                       media_url: mediaUrl,
+                                                                                                                                                                                                                                                                                                                                                                 media_type: mediaType,
+                                                                                                                                                                                                                                                                                                                                                                           edited: false,
+                                                                                                                                                                                                                                                                                                                                                                                     deleted: false
+                                                                                                                                                                                                                                                                                                                                                                                             },
+                                                                                                                                                                                                                                                                                                                                                                                                   ]);
+                                                                                                                                                                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                                                                                                                                                                         } catch (sbError) {
+                                                                                                                                                                                                                                                                                                                                                                                                             console.error('Supabase Error in sendMessage:', sbError);
+                                                                                                                                                                                                                                                                                                                                                                                                               }
+                                                                                                                                                                                                                                                                                                                                                                                                               };
+
+                                                                                                                                                                                                                                                                                                                                                                                                               /**
+                                                                                                                                                                                                                                                                                                                                                                                                                * Subscribes to real-time updates. Continues reading from Firebase.
+                                                                                                                                                                                                                                                                                                                                                                                                                 */
+                                                                                                                                                                                                                                                                                                                                                                                                                 export const subscribeToChat = (
+                                                                                                                                                                                                                                                                                                                                                                                                                   chatId: string,
+                                                                                                                                                                                                                                                                                                                                                                                                                     callback: (messages: any[]) => void
+                                                                                                                                                                                                                                                                                                                                                                                                                     ) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                       return onSnapshot(
+                                                                                                                                                                                                                                                                                                                                                                                                                           query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'asc')),
+                                                                                                                                                                                                                                                                                                                                                                                                                               (snapshot) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                     const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+                                                                                                                                                                                                                                                                                                                                                                                                                                           callback(msgs);
+                                                                                                                                                                                                                                                                                                                                                                                                                                               }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  * Edits a message text in both databases.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                   */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                   export const editMessage = async (chatId: string, messageId: string, newText: string) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     const encryptedText = encryptMessage(newText, chatId);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                       // --- FIREBASE PRIMARY OPERATION ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                         const msgRef = doc(db, 'chats', chatId, 'messages', messageId);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           await updateDoc(msgRef, {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                               text: encryptedText,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                   edited: true,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                     });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                       // --- SUPABASE MIRROR OPERATION ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                         try {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                             await supabase
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   .from('messages')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         .update({ text: encryptedText, edited: true })
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               .eq('firebase_message_id', messageId);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 } catch (sbError) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     console.error('Supabase Error in editMessage:', sbError);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        * Marks a message as deleted across both databases.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         export const deleteMessage = async (chatId: string, messageId: string) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           // --- FIREBASE PRIMARY OPERATION ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             const msgRef = doc(db, 'chats', chatId, 'messages', messageId);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               await updateDoc(msgRef, { deleted: true });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 // --- SUPABASE MIRROR OPERATION ---
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   try {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       await supabase
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             .from('messages')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   .update({ deleted: true })
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         .eq('firebase_message_id', messageId);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           } catch (sbError) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               console.error('Supabase Error in deleteMessage:', sbError);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 };
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

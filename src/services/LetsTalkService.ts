@@ -1,3 +1,4 @@
+// src/services/LetsTalkService.ts
 import {
   addDoc,
   collection,
@@ -17,7 +18,8 @@ import {
   where,
 } from "firebase/firestore";
 
-import { db } from "../../src/firebaseConfig";
+import { db } from "../firebaseConfig";
+import { createClient } from '@supabase/supabase-js';
 import {
   LetsTalkRoomRecord,
   Member,
@@ -25,29 +27,26 @@ import {
   ProgramStep,
   RoomComment,
   SpeakRequest
-} from "../../src/constants/LetsTalkTypes";
+} from "../constants/LetsTalkTypes";
 
-/* ─────────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────────── */
+// Initialize Supabase Client (Update keys with your project values or env vars)
+const supabase = createClient('https://jywoururkjaszyfrfqnd.supabase.co', 'sb_publishable_-ABLfwp1OMA0J2WWf_77_A_09NtlfIy');
+
+/* ───────────────────────
+   CONSTANTS───────────────── */
 const MEMBERS_PAGE_SIZE = 50;
 const ROOMS_COLLECTION = "letsTalkRooms";
 
-/* ─────────────────────────────────────────────
+/* ──────────────────
    MEMBER QUERIES
-───────────────────────────────────────────── */
+─────────────── */
 
-/**
- * Fetch a paginated batch of members for a room, ordered by joinedAt.
- * Pass lastDoc to continue from the previous page.
- */
 export const fetchMembers = async (roomId: string, lastDoc?: any) => {
   let q = query(
     collection(db, ROOMS_COLLECTION, roomId, "members"),
     orderBy("joinedAt"),
     limit(MEMBERS_PAGE_SIZE)
   );
-
   if (lastDoc) {
     q = query(
       collection(db, ROOMS_COLLECTION, roomId, "members"),
@@ -56,14 +55,10 @@ export const fetchMembers = async (roomId: string, lastDoc?: any) => {
       limit(MEMBERS_PAGE_SIZE)
     );
   }
-
   const snapshot = await getDocs(q);
   return snapshot;
 };
 
-/**
- * Fetch only VIP members for a room (up to 130).
- */
 export const fetchVipMembers = async (roomId: string): Promise<Member[]> => {
   const q = query(
     collection(db, ROOMS_COLLECTION, roomId, "members"),
@@ -75,27 +70,23 @@ export const fetchVipMembers = async (roomId: string): Promise<Member[]> => {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Member));
 };
 
-/**
- * Fetch a single member by ID.
- */
 export const fetchMemberById = async (
   roomId: string,
   memberId: string
 ): Promise<Member | null> => {
-  const ref = doc(db, ROOMS_COLLECTION, roomId, "members", memberId);
+  const ref = doc(db, ROOMS_COLLECTION, 
+roomId, "members", memberId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as Member;
 };
 
-/**
- * Add a member to the room.
- */
 export const addMemberToRoom = async (
   roomId: string,
   member: Omit<Member, "id">
 ): Promise<string> => {
-  const ref = await addDoc(collection(db, ROOMS_COLLECTION, roomId, "members"), {
+  const ref = await addDoc(collection
+(db, ROOMS_COLLECTION, roomId, "members"), {
     ...member,
     joinedAt: serverTimestamp(),
     isVIP: false,
@@ -103,43 +94,76 @@ export const addMemberToRoom = async (
     hasMic: false,
     requestedToSpeak: false,
   });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .upsert([{ id: roomId }], { onConflict: 'id' });
+
+    await supabase.from('lets_talk_members').insert([
+      {
+        id: ref.id,
+        room_id: roomId,
+        user_id: (member as any).userId || ref.id,
+        username: (member as any).username || null,
+        profile_picture: (member as any).profilePicture || null,
+        is_vip: false,
+        is_speaking: false,
+        has_mic: false,
+        requested_to_speak: false,
+      },
+    ]);
+  } catch (sbError) {
+    console.error('Supabase Error in addMemberToRoom:', sbError);
+  }
+
   return ref.id;
 };
 
-/* ─────────────────────────────────────────────
+/* ────────────────────────────────
    VIP MANAGEMENT
-───────────────────────────────────────────── */
+────────────────────────── */
 
-/**
- * Mark a member as VIP.
- */
 export const addVipMember = async (
   roomId: string,
   memberId: string
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId, "members", memberId);
   await updateDoc(ref, { isVIP: true });
+
+  try {
+    await supabase
+      .from('lets_talk_members')
+      .update({ is_vip: true })
+      .eq('room_id', roomId)
+      .eq('id', memberId);
+  } catch (sbError) {
+    console.error('Supabase Error in addVipMember:', sbError);
+  }
 };
 
-/**
- * Remove VIP status from a member.
- */
 export const removeVipMember = async (
   roomId: string,
   memberId: string
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId, "members", memberId);
   await updateDoc(ref, { isVIP: false });
+
+  try {
+    await supabase
+      .from('lets_talk_members')
+      .update({ is_vip: false })
+      .eq('room_id', roomId)
+      .eq('id', memberId);
+  } catch (sbError) {
+    console.error('Supabase Error in removeVipMember:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
+/* ───────────────────────────────
    SPEAKING / MIC MANAGEMENT
-───────────────────────────────────────────── */
+─────────────────────── */
 
-/**
- * Set the current speaker for the room (hasMic + isSpeaking = true).
- * Clears mic from all other members via a room-level field (currentSpeakerId).
- */
 export const setCurrentSpeaker = async (
   roomId: string,
   memberId: string | null
@@ -151,19 +175,39 @@ export const setCurrentSpeaker = async (
     const memberRef = doc(db, ROOMS_COLLECTION, roomId, "members", memberId);
     await updateDoc(memberRef, { isSpeaking: true, hasMic: true });
   }
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ current_speaker_id: memberId ?? null })
+      .eq('id', roomId);
+
+    if (memberId) {
+      await supabase
+        .from('lets_talk_members')
+        .update({ is_speaking: true, has_mic: true })
+        .eq('room_id', roomId)
+        .eq('id', memberId);
+    }
+  } catch (sbError) {
+    console.error('Supabase Error in setCurrentSpeaker:', sbError);
+  }
 };
 
-/**
- * Clear the current speaker and mic from all members.
- */
 export const clearCurrentSpeaker = async (roomId: string): Promise<void> => {
   const roomRef = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(roomRef, { currentSpeakerId: null, nextSpeakerId: null });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ current_speaker_id: null, next_speaker_id: null })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in clearCurrentSpeaker:', sbError);
+  }
 };
 
-/**
- * Set the next speaker (queued, not yet on mic).
- */
 export const setNextSpeaker = async (
   roomId: string,
   memberId: string | null,
@@ -174,12 +218,20 @@ export const setNextSpeaker = async (
     nextSpeakerId: memberId ?? null,
     hostFinalRemarks: isHostFinalRemarks,
   });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({
+        next_speaker_id: memberId ?? null,
+        host_final_remarks: isHostFinalRemarks,
+      })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in setNextSpeaker:', sbError);
+  }
 };
 
-/**
- * Pass the mic: current speaker finishes → next speaker becomes current.
- * Logs a mic pass event for history/analytics.
- */
 export const passMic = async (
   roomId: string,
   fromId: string | null,
@@ -211,15 +263,50 @@ export const passMic = async (
     const toRef = doc(db, ROOMS_COLLECTION, roomId, "members", toId);
     await updateDoc(toRef, { isSpeaking: true, hasMic: true });
   }
+
+  try {
+    await supabase.from('lets_talk_mic_pass_events').insert([
+      {
+        room_id: roomId,
+        from_id: fromId,
+        to_id: toId,
+        is_host_final_remarks: isHostFinalRemarks,
+      },
+    ]);
+
+    await supabase
+      .from('lets_talk_rooms')
+      .update({
+        current_speaker_id: toId ?? null,
+        next_speaker_id: null,
+        host_final_remarks: isHostFinalRemarks,
+      })
+      .eq('id', roomId);
+
+    if (fromId) {
+      await supabase
+        .from('lets_talk_members')
+        .update({ is_speaking: false, has_mic: false })
+        .eq('room_id', roomId)
+        .eq('id', fromId);
+    }
+
+    if (toId && !isHostFinalRemarks) {
+      await supabase
+        .from('lets_talk_members')
+        .update({ is_speaking: true, has_mic: true })
+        .eq('room_id', roomId)
+        .eq('id', toId);
+    }
+  } catch (sbError) {
+    console.error('Supabase Error in passMic:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
+/* ─────────────────
    TALK QUEUE (raise hand)
-───────────────────────────────────────────── */
+─────────────────────── */
 
-/**
- * Add a user to the speaking request queue.
- */
 export const requestToSpeak = async (
   roomId: string,
   userId: string
@@ -229,15 +316,29 @@ export const requestToSpeak = async (
   if (!snap.exists()) return;
   const current: string[] = snap.data().talkQueue ?? [];
   if (current.includes(userId)) return;
-  await updateDoc(roomRef, { talkQueue: [...current, userId] });
+  const updatedQueue = [...current, userId];
+  
+  await updateDoc(roomRef, { talkQueue: updatedQueue });
 
   const memberRef = doc(db, ROOMS_COLLECTION, roomId, "members", userId);
   await updateDoc(memberRef, { requestedToSpeak: true });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ talk_queue: updatedQueue })
+      .eq('id', roomId);
+
+    await supabase
+      .from('lets_talk_members')
+      .update({ requested_to_speak: true })
+      .eq('room_id', roomId)
+      .eq('id', userId);
+  } catch (sbError) {
+    console.error('Supabase Error in requestToSpeak:', sbError);
+  }
 };
 
-/**
- * Remove a user from the speaking request queue.
- */
 export const removeFromQueue = async (
   roomId: string,
   userId: string
@@ -246,21 +347,33 @@ export const removeFromQueue = async (
   const snap = await getDoc(roomRef);
   if (!snap.exists()) return;
   const current: string[] = snap.data().talkQueue ?? [];
-  await updateDoc(roomRef, {
-    talkQueue: current.filter((id) => id !== userId),
-  });
+  const updatedQueue = current.filter((id) => id !== userId);
+  
+  await updateDoc(roomRef, { talkQueue: updatedQueue });
 
   const memberRef = doc(db, ROOMS_COLLECTION, roomId, "members", userId);
   await updateDoc(memberRef, { requestedToSpeak: false });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ talk_queue: updatedQueue })
+      .eq('id', roomId);
+
+    await supabase
+      .from('lets_talk_members')
+      .update({ requested_to_speak: false })
+      .eq('room_id', roomId)
+      .eq('id', userId);
+  } catch (sbError) {
+    console.error('Supabase Error in removeFromQueue:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
+/* ─────────────────────────
    ROOM METADATA
-───────────────────────────────────────────── */
+─────────────────── */
 
-/**
- * Fetch the full room record.
- */
 export const fetchRoom = async (
   roomId: string
 ): Promise<LetsTalkRoomRecord | null> => {
@@ -270,15 +383,16 @@ export const fetchRoom = async (
   return { id: snap.id, ...snap.data() } as LetsTalkRoomRecord;
 };
 
-/**
- * Create a new Let's Talk room.
- */
 export const createRoom = async (
-  room: Omit<LetsTalkRoomRecord, "id" | "createdAt" | "status" | "likes" | "comments">
+  room: Omit<
+    LetsTalkRoomRecord,
+    "id" | "createdAt" | "status" | "likes" | "comments"
+  >
 ): Promise<string> => {
+  const nowMs = Date.now();
   const ref = await addDoc(collection(db, ROOMS_COLLECTION), {
     ...room,
-    createdAt: Date.now(),
+    createdAt: nowMs,
     status: "scheduled",
     likes: 0,
     comments: [],
@@ -292,77 +406,129 @@ export const createRoom = async (
     currentSpeakerId: null,
     nextSpeakerId: null,
   });
+
+  try {
+    await supabase.from('lets_talk_rooms').insert([
+      {
+        id: ref.id,
+        title: (room as any).title || 'Untitled Room',
+        status: 'scheduled',
+        likes: 0,
+        podium_visible: true,
+        live_camera: false,
+        host_final_remarks: false,
+        current_speaker_id: null,
+        next_speaker_id: null,
+        talk_queue: [],
+        program_schedule: [],
+        comments: [],
+        created_at_ms: nowMs,
+      },
+    ]);
+  } catch (sbError) {
+    console.error('Supabase Error in createRoom:', sbError);
+  }
+
   return ref.id;
 };
 
-/**
- * Update the room title (host only).
- */
 export const updateRoomTitle = async (
   roomId: string,
   title: string
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(ref, { title });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ title })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in updateRoomTitle:', sbError);
+  }
 };
 
-/**
- * Toggle the podium visibility.
- */
 export const updatePodiumVisible = async (
   roomId: string,
   podiumVisible: boolean
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(ref, { podiumVisible });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ podium_visible: podiumVisible })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in updatePodiumVisible:', sbError);
+  }
 };
 
-/**
- * Toggle live camera for the current speaker.
- */
 export const updateLiveCamera = async (
   roomId: string,
   liveCamera: boolean
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(ref, { liveCamera });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ live_camera: liveCamera })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in updateLiveCamera:', sbError);
+  }
 };
 
-/**
- * Mark the room as ended.
- */
 export const endRoom = async (roomId: string): Promise<void> => {
+  const nowMs = Date.now();
   const ref = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(ref, {
-    status: "ended",
-    endedAt: Date.now(),
+    status: 'ended',
+    endedAt: nowMs,
     currentSpeakerId: null,
     nextSpeakerId: null,
   });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({
+        status: 'ended',
+        ended_at_ms: nowMs,
+        current_speaker_id: null,
+        next_speaker_id: null,
+      })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in endRoom:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
-   PROGRAM SCHEDULE
-───────────────────────────────────────────── */
-
-/**
- * Update the full program schedule for the room.
- */
+/* ─────────────────
+─────PROGRAM SCHEDULE─────────────────
+─────── */
 export const updateProgramSchedule = async (
   roomId: string,
   schedule: ProgramStep[]
 ): Promise<void> => {
   const ref = doc(db, ROOMS_COLLECTION, roomId);
   await updateDoc(ref, { programSchedule: schedule });
+
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ program_schedule: schedule as any })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in updateProgramSchedule:', sbError);
+  }
 };
-
-/* ─────────────────────────────────────────────
-   LIKES
-───────────────────────────────────────────── */
-
-/**
- * Increment or decrement the like count.
- */
+/* ───────────────LIKES────────────────
+────── */
 export const toggleLike = async (
   roomId: string,
   delta: 1 | -1
@@ -371,16 +537,21 @@ export const toggleLike = async (
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
   const current: number = snap.data().likes ?? 0;
-  await updateDoc(ref, { likes: Math.max(0, current + delta) });
+  const nextLikes = Math.max(0, current + delta);
+  await updateDoc(ref, { likes: nextLikes });
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ likes: nextLikes })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in toggleLike:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
-   COMMENTS
-───────────────────────────────────────────── */
-
-/**
- * Add a comment to the room's comment list.
- */
+/* ────────────────────
+───────COMMENTS─────
+────── */
 export const addComment = async (
   roomId: string,
   comment: Omit<RoomComment, "id" | "createdAt">
@@ -394,17 +565,19 @@ export const addComment = async (
     id: Date.now().toString(),
     createdAt: Date.now(),
   };
-  await updateDoc(ref, { comments: [...current, newComment] });
+  const updatedComments = [...current, newComment];
+  await updateDoc(ref, { comments: updatedComments });
+  try {
+    await supabase
+      .from('lets_talk_rooms')
+      .update({ comments: updatedComments as any })
+      .eq('id', roomId);
+  } catch (sbError) {
+    console.error('Supabase Error in addComment:', sbError);
+  }
 };
 
-/* ─────────────────────────────────────────────
-   REAL-TIME LISTENERS
-───────────────────────────────────────────── */
-
-/**
- * Subscribe to real-time room updates (title, speaker, queue, etc.).
- * Returns an unsubscribe function.
- */
+/* ────────REAL-TIME LISTENERS─────── */
 export const subscribeToRoom = (
   roomId: string,
   onUpdate: (room: LetsTalkRoomRecord) => void,
@@ -425,10 +598,6 @@ export const subscribeToRoom = (
   );
 };
 
-/**
- * Subscribe to real-time member updates for a room.
- * Returns an unsubscribe function.
- */
 export const subscribeToMembers = (
   roomId: string,
   onUpdate: (members: Member[]) => void,

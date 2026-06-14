@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 
 import { auth } from '../firebaseConfig';
+import {supabase} from '../config/supabase';
 import PostCard from '../components/PostCard';
 import { searchPosts, searchUsers } from '../services/searchService';
 import SkeletonContent from 'react-native-skeleton-content';

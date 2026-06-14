@@ -1,88 +1,127 @@
 // src/services/searchService.ts
 
 import { db } from "../firebaseConfig";
+import { supabase } from '../config/supabase';
 import {
   collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-  doc,
-  getDoc
-} from "firebase/firestore";
+    query,
+      where,
+        getDocs,
+          orderBy,
+            limit,
+              doc,
+                getDoc
+                } from "firebase/firestore";
 
-/**
- * Search posts by text
- */
-export const searchPosts = async (keyword: string) => {
-  try {
-    const q = query(
-      collection(db, "posts"),
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
+                /**
+                 * Search posts by text across Firebase and Supabase
+                  */
+                  export const searchPosts = async (keyword: string) => {
+                    try {
+                        const resultsMap = new Map<string, any>();
 
-    const snapshot = await getDocs(q);
+                            // 1. Fetch from Firebase
+                                const firebaseQuery = query(
+                                      collection(db, "posts"),
+                                            orderBy("createdAt", "desc"),
+                                                  limit(20)
+                                                      );
+                                                          const firebaseSnapshot = await getDocs(firebaseQuery);
 
-    const results: any[] = [];
+                                                              firebaseSnapshot.forEach((doc) => {
+                                                                    const data = doc.data();
+                                                                          if (
+                                                                                  data.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+                                                                                          data.content?.toLowerCase().includes(keyword.toLowerCase())
+                                                                                                ) {
+                                                                                                        resultsMap.set(doc.id, { id: doc.id, ...data });
+                                                                                                              }
+                                                                                                                  });
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
+                                                                                                                      // 2. Fetch from Supabase (using standard text search)
+                                                                                                                          const { data: supabasePosts, error } = await supabase
+                                                                                                                                .from("posts")
+                                                                                                                                      .select("*")
+                                                                                                                                            .or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`)
+                                                                                                                                                  .order("created_at", { ascending: false })
+                                                                                                                                                        .limit(20);
 
-      if (
-        data.title?.toLowerCase().includes(keyword.toLowerCase()) ||
-        data.content?.toLowerCase().includes(keyword.toLowerCase())
-      ) {
-        results.push({ id: doc.id, ...data });
-      }
-    });
+                                                                                                                                                            if (error) {
+                                                                                                                                                                  console.log("Supabase post search error:", error);
+                                                                                                                                                                      } else if (supabasePosts) {
+                                                                                                                                                                            supabasePosts.forEach((post) => {
+                                                                                                                                                                                    // Map created_at to match Firebase's createdAt if your frontend expects it
+                                                                                                                                                                                            resultsMap.set(post.id, {
+                                                                                                                                                                                                      ...post,
+                                                                                                                                                                                                                createdAt: post.createdAt || post.created_at
+                                                                                                                                                                                                                        });
+                                                                                                                                                                                                                              });
+                                                                                                                                                                                                                                  }
 
-    return results;
-  } catch (error) {
-    console.log("Search error:", error);
-    return [];
-  }
-};
+                                                                                                                                                                                                                                      // Convert Map back to an array of unique items
+                                                                                                                                                                                                                                          return Array.from(resultsMap.values());
+                                                                                                                                                                                                                                            } catch (error) {
+                                                                                                                                                                                                                                                console.log("Search error:", error);
+                                                                                                                                                                                                                                                    return [];
+                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                      };
 
-/**
- * Search users
- */
-export const searchUsers = async (keyword: string, currentUserId: string) => {
-  try {
-    const q = query(
-      collection(db, "users"),
-      orderBy("username"),
-      limit(20)
-    );
+                                                                                                                                                                                                                                                      /**
+                                                                                                                                                                                                                                                       * Search users across Firebase and Supabase
+                                                                                                                                                                                                                                                        */
+                                                                                                                                                                                                                                                        export const searchUsers = async (keyword: string, currentUserId: string) => {
+                                                                                                                                                                                                                                                          try {
+                                                                                                                                                                                                                                                              const usersMap = new Map<string, any>();
 
-    const snapshot = await getDocs(q);
+                                                                                                                                                                                                                                                                  // 1. Fetch from Firebase
+                                                                                                                                                                                                                                                                      const firebaseQuery = query(
+                                                                                                                                                                                                                                                                            collection(db, "users"),
+                                                                                                                                                                                                                                                                                  orderBy("username"),
+                                                                                                                                                                                                                                                                                        limit(20)
+                                                                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                                                                const firebaseSnapshot = await getDocs(firebaseQuery);
 
-    let users: any[] = [];
+                                                                                                                                                                                                                                                                                                    firebaseSnapshot.forEach((docSnap) => {
+                                                                                                                                                                                                                                                                                                          const data = docSnap.data();
+                                                                                                                                                                                                                                                                                                                if (data.username?.toLowerCase().includes(keyword.toLowerCase())) {
+                                                                                                                                                                                                                                                                                                                        usersMap.set(docSnap.id, { id: docSnap.id, ...data });
+                                                                                                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                                                                                                                  });
 
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
+                                                                                                                                                                                                                                                                                                                                      // 2. Fetch from Supabase
+                                                                                                                                                                                                                                                                                                                                          const { data: supabaseUsers, error } = await supabase
+                                                                                                                                                                                                                                                                                                                                                .from("users")
+                                                                                                                                                                                                                                                                                                                                                      .select("*")
+                                                                                                                                                                                                                                                                                                                                                            .ilike("username", `%${keyword}%`)
+                                                                                                                                                                                                                                                                                                                                                                  .order("username")
+                                                                                                                                                                                                                                                                                                                                                                        .limit(20);
 
-      if (data.username?.toLowerCase().includes(keyword.toLowerCase())) {
-        users.push({ id: docSnap.id, ...data });
-      }
-    });
+                                                                                                                                                                                                                                                                                                                                                                            if (error) {
+                                                                                                                                                                                                                                                                                                                                                                                  console.log("Supabase user search error:", error);
+                                                                                                                                                                                                                                                                                                                                                                                      } else if (supabaseUsers) {
+                                                                                                                                                                                                                                                                                                                                                                                            supabaseUsers.forEach((user) => {
+                                                                                                                                                                                                                                                                                                                                                                                                    usersMap.set(user.id, { ...user });
+                                                                                                                                                                                                                                                                                                                                                                                                          });
+                                                                                                                                                                                                                                                                                                                                                                                                              }
 
-    // Get current user document
-    const currentUserDoc = await getDoc(doc(db, "users", currentUserId));
-    const currentUser = currentUserDoc.data();
+                                                                                                                                                                                                                                                                                                                                                                                                                  // Convert to array for filtering
+                                                                                                                                                                                                                                                                                                                                                                                                                      let combinedUsers = Array.from(usersMap.values());
 
-    // Hide blocked users
-    users = users.filter(
-      (user) =>
-        !currentUser?.blockedUsers?.includes(user.id) &&
-        !currentUser?.blockedBy?.includes(user.id)
-    );
+                                                                                                                                                                                                                                                                                                                                                                                                                          // 3. Get current user document from Firebase to check block lists
+                                                                                                                                                                                                                                                                                                                                                                                                                              const currentUserDoc = await getDoc(doc(db, "users", currentUserId));
+                                                                                                                                                                                                                                                                                                                                                                                                                                  const currentUser = currentUserDoc.data();
 
-    return users;
+                                                                                                                                                                                                                                                                                                                                                                                                                                      // Hide blocked users across the combined results
+                                                                                                                                                                                                                                                                                                                                                                                                                                          combinedUsers = combinedUsers.filter(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                (user) =>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        !currentUser?.blockedUsers?.includes(user.id) &&
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                !currentUser?.blockedBy?.includes(user.id)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    );
 
-  } catch (error) {
-    console.log("User search error:", error);
-    return [];
-  }
-};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return combinedUsers;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          } catch (error) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              console.log("User search error:", error);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  return [];
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    };

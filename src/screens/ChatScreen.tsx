@@ -19,6 +19,7 @@ import {
 } from '../services/chatService';
 import { decryptMessage } from '../services/encryption';
 import { auth, db } from '../firebaseConfig';
+import {supabase} from '../config/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { doc, collection, updateDoc, onSnapshot, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';

@@ -4,6 +4,7 @@ import { ScrollView, Text, StyleSheet } from "react-native";
 import { subscribeToCountryTrending, subscribeToGlobalTrending } from "../services/postService";
 import PostCard from "../components/PostCard";
 import { auth } from "../firebaseConfig";
+import {supabase} from '../config/supabase';
 
 // Helper: Convert ISO country code to emoji flag
 const countryFlag = (countryCode: string) =>

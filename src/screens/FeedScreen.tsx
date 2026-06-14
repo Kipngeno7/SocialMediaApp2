@@ -51,6 +51,7 @@ import { usePosts } from "../../src/context/PostContext";
 import PostCard from "../components/PostCard";
 import { calculateFinalScore } from "../utils/feedRanking";
 import { auth } from "../firebaseConfig";
+import {supabase} from '../config/supabase';
 import { connectSocket, subscribeToNewPosts } from "../services/socketService";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────

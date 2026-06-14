@@ -25,6 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { app } from "../firebaseConfig";
+import {supabase} from '../config/supabase';
 import { useNavigation } from "@react-navigation/native";
 import { createPost } from '../services/postService';
 

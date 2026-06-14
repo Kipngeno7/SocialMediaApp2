@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { auth } from '../firebaseConfig';
+import {supabase} from '../config/supabase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import database from '@react-native-firebase/database';
 import storage from '@react-native-firebase/storage';

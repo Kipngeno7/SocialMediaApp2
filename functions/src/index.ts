@@ -1,7 +1,7 @@
 // functions/src/index.ts
 // Add this as line 1 in src/index.ts
 import 'react-native-url-polyfill/auto';
-import '../config/supabase';
+import './config/supabase';
 
 
 // @ts-ignore: firebase-functions types may not be available in the editor environment

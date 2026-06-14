@@ -13,6 +13,7 @@ import {
                 import PostCard from '../components/PostCard';
                 import { getUserById, getUserPosts } from '../services/userService';
                 import { auth } from '../firebaseConfig';
+                import {supabase} from '../config/supabase';
                 import SkeletonContent from 'react-native-skeleton-content';
 
                 import { blockUser, unblockUser, checkIfBlocked } from '../services/blockService';
@@ -53,7 +54,7 @@ import {
                                                   const [following, setFollowing] = useState<{ [key: string]: boolean }>({});
 
                                                     const currentUserId = auth.currentUser?.uid;
-                                                      
+                                                    const database = getDatabase();
                                                         // Pass types directly into useNavigation to resolve line 203 param errors
                                                           const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
@@ -66,15 +67,14 @@ import {
 
                                                                                     // Profile data and posts
                                                                                           const userData = await getUserById(userId);
-                                                                                                const userPosts = await getUserPosts(userId);
-                                                                                                      setUser(userData);
-                                                                                                            setPosts(userPosts);
-                                                                                                                  setLoading(false);
-
-                                                                                                                        // Initialize getDatabase instance cleanly
-                                                                                                                              const database = getDatabase();
-
-                                                                                                                                    // Fix real-time listeners syntax and explicit DataSnapshot types
+                                                                                                const userPostsResponse = await getUserPosts(userId);
+                                                                                                      const userPosts = [
+                                                                                                            ...(userPostsResponse.firebase ?? []),
+                                                                                                                  ...(userPostsResponse.supabase ?? []),
+                                                                                                                        ];
+                                                                                                                              setUser(userData);
+                                                                                                                                    setPosts(userPosts);
+                                                                                                                                          setLoading(false);
                                                                                                                                           const followersRef = ref(database, `followers/${userId}`);
                                                                                                                                                 unsubscribeFollowers = onValue(followersRef, (snapshot: DataSnapshot) => {
                                                                                                                                                         const data = snapshot.val() || {};

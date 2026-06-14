@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, FlatList, Text, StyleSheet } from 'react-native';
 import PeopleYouMayFollow from '../components/PeopleYouMayFollow';
 import { auth } from '../firebaseConfig';
+import {supabase} from'../config/supabase';
 import { subscribeToPosts, subscribeToPostUpdates } from '../services/postService';
 import { subscribeToNotifications } from '../services/notificationService';
 interface Post {

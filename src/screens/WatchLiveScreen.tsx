@@ -16,6 +16,7 @@ import Video from "react-native-video";
 import { Ionicons } from "@expo/vector-icons";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onChildAdded, push, onValue, set } from "firebase/database";
+import {supabase} from '../config/supabase';
 import { updateProfile } from 'firebase/auth';
 
 import { getAuth, onAuthStateChanged, signInAnonymously, User } from "firebase/auth";

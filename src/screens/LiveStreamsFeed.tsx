@@ -3,21 +3,22 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { getDatabase, ref, onValue } from 'firebase/database';
-
+import {supabase} from '../config/supabase';
 const { height } = Dimensions.get('window');
 
 // Emoji map for categories
 const CATEGORY_EMOJI: Record<string, string> = {
-  Political: "🔴",
+  "Political/Governance": "🔴",
     Sports: "🟠",
       Health: "🟢",
         "Educational/Philosophical": "🔵",
           Entertainment: "🌸",
-            Technology: "🟣",
+            Technological: "🟣",
               Religious: "🕊️",
-                "Development/Socioeconomic": "🟤",
+                "Development/Economics": "🟤",
                   "Personal/Warm Touch": "💛",
                     "Public Information": "🔷",
+                    "Sociocultural": "🎭",
                       Other: "⚪",
                         Gaming: "🎮",
                         };

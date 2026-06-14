@@ -10,6 +10,7 @@ StyleSheet
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
+import {supabase} from '../config/supabase';
 
 const languages = [
 

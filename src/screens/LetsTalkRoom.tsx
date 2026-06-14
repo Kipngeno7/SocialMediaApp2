@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { fetchMembers } from "../services/LetsTalkService";
 import { Member } from "../../src/constants/LetsTalkTypes";
+import {supabase} from '../config/supabase';
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const MAX_VIP = 130;

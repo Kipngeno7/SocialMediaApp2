@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-nat
 import { RouteProp, useRoute } from '@react-navigation/native';
 // Replace the '@react-native-firebase/database' import with this:
 import { getDatabase, ref, onValue } from 'firebase/database';
+import {supabase} from '../config/supabase';
 
 const { width, height } = Dimensions.get('window');
 

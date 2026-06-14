@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { auth, db } from '../firebaseConfig';
+import {supabase} from '../config/supabase';
 import { doc, getDoc } from 'firebase/firestore';
 import { unblockUser } from '../services/blockService';
 

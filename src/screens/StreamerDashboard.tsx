@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { getDatabase, ref, onValue } from 'firebase/database';
+import {supabase} from '../config/supabase';
 
 import axios from 'axios';
 

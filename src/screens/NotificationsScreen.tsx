@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, FlatList } from 'react-native';
 import { auth } from '../firebaseConfig';
+import {supabase} from '..config/supabase';
 import { subscribeToNotifications } from '../services/notificationListener';
 import { followUser } from '../services/followService';
 

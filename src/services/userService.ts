@@ -1,7 +1,7 @@
 // src/services/userService.ts
 import { db } from '../firebaseConfig'; // your Firestore config
 import { collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import { supabase } from '../config/supabase'; // importing your Supabase client
+import { supabase } from '../config/supabase'; 
 
 export const getUserById = async (userId: string) => {
   // Existing Firebase Logic

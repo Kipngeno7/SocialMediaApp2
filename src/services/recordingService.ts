@@ -1,7 +1,7 @@
 // src/services/recordingService.ts
 import { Audio } from "expo-av";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { supabase } from '../config/supabase'; // Imported your existing Supabase client
+import { supabase } from '../config/supabase'; 
 
 const storage = getStorage();
 

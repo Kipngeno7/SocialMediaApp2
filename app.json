@@ -3,10 +3,9 @@
     "name": "SocialMediaApp",
     "slug": "socialmediaapp",
     "version": "1.0.0",
-    "sdkVersion": "55.0.0",
     "platforms": [
       "android",
-      "ios"
+      "ios", "web"
     ],
     "extra": {
       "eas": {
@@ -22,8 +21,7 @@
       "buildNumber": "1.0.0"
     },
     "plugins": [
-      "expo-font",
-      "expo-sharing"
+      
     ]
   }
 }

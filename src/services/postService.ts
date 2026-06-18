@@ -19,7 +19,7 @@ import {
                           import RNFS from 'react-native-fs';
 
                           import { checkModeration, checkImageModeration } from './moderationService';
-                          // 👇 IMPORT YOUR SUPABASE CLIENT HERE
+                          
                           import { supabase } from '../config/supabase'; 
 
                           /**

@@ -23,7 +23,7 @@ import {
 
                   // Initialize your Supabase client instance
                   // import { supabase } from '../supabaseConfig';
-                  const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_ANON_KEY');
+                  const supabase = createClient('https://jywoururkjaszyfrfqnd.supabase.co', 'sb_publishable_-ABLfwp1OMA0J2WWf_77_A_09NtlfIy');
 
                   /**
                    * Resolves or creates a chat room ID.

@@ -58,6 +58,27 @@ export default function WatchLiveScreen() {
   const [viewerCount, setViewerCount] = useState<number>(0);
   const [leaderboard, setLeaderboard] = useState<{ user: string; count: number; photoURL?: string }[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [streams, setStreams] = useState(STREAMS);
+  useEffect(() => {
+      if (!user || !currentStream) return;
+
+        const saveWatchHistory = async () => {
+            const { error } = await supabase
+                  .from("watch_history")
+                        .insert({
+                                user_id: user.uid,
+                                        stream_id: currentStream.id,
+                                                stream_name: currentStream.name,
+                                                      });
+
+                                                          if (error) {
+                                                                console.log("Watch History Error:", error);
+                                                                    }
+                                                                      };
+
+                                                                        saveWatchHistory();
+                                                                        }, [user, currentStream]);
+  
 
   // ---- Sign in anonymously if not logged in ----
   useEffect(() => {
@@ -78,6 +99,33 @@ export default function WatchLiveScreen() {
       }
     });
   }, []);
+  useEffect(() => {
+      const loadStreams = async () => {
+          const { data, error } = await supabase
+                .from("livestreams")
+                      .select("*");
+
+                          if (error) {
+                                console.log(error);
+                                      return;
+                                          }
+
+                                              if (data && data.length > 0) {
+                                                    const formattedStreams = data.map(stream => ({
+                                                            id: stream.id,
+                                                                    name: stream.name,
+                                                                            playbackId: stream.playback_id,
+                                                                                    playbackUrl: stream.playback_url,
+                                                                                          }));
+
+                                                                                                setStreams(formattedStreams);
+                                                                                                      setCurrentStream(formattedStreams[0]);
+                                                                                                          }
+                                                                                                            };
+
+                                                                                                              loadStreams();
+                                                                                                              }, []);
+  
 
   // ---- Update viewers on current stream ----
   useEffect(() => {
@@ -117,6 +165,18 @@ export default function WatchLiveScreen() {
       user: user.displayName || `User-${user.uid.substring(0, 5)}`,
       photoURL: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`
     });
+    supabase
+      .from("stream_analytics")
+        .insert({
+            stream_id: currentStream.id,
+                user_id: user.uid,
+                    reaction: emoji,
+                      })
+                        .then(({ error }) => {
+                            if (error) {
+                                  console.log("Analytics Error:", error);
+                                      }
+                                        });
 
     // Increment viewer reaction count
     const viewerRef = ref(db, `viewers/${currentStream.id}/${user.uid}`);
@@ -191,7 +251,7 @@ export default function WatchLiveScreen() {
     <View style={styles.container}>
       {/* Stream Selector */}
       <ScrollView horizontal style={styles.streamSelector}>
-        {STREAMS.map(s => (
+        {streams.map(s => (
           <TouchableOpacity
             key={s.id}
             style={[

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from "expo-router/react-navigation";
 import { auth } from '../firebaseConfig';
 import {supabase} from '../config/supabase';
 import { getDatabase, ref, push } from 'firebase/database';

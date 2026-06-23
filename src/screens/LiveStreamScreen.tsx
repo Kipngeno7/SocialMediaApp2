@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute } from "expo-router/react-navigation";
 // Replace the '@react-native-firebase/database' import with this:
 import { getDatabase, ref, onValue } from 'firebase/database';
 import {supabase} from '../config/supabase';

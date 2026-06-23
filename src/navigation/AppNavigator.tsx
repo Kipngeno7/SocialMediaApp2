@@ -1,9 +1,15 @@
 // src/navigation/AppNavigator.tsx
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+
+
+
+
 import { TouchableOpacity } from 'react-native';
 
 import AuthScreen from '../screens/AuthScreen';
@@ -32,10 +38,12 @@ import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
 import LetsTalkRoom from '../screens/LetsTalkRoom';
 import PrivacySettingsScreen from '../screens/PrivacySettingsScreen';
 import WatchLiveScreen from '../screens/WatchLiveScreen';
-
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+
+
+
 
 /* ---------------- Bottom Tabs ---------------- */
 
@@ -52,7 +60,7 @@ function MainTabs({ navigation }: any) {
         headerShown: true,
         headerTitleAlign: 'center',
         headerLeft: headerLeftHamburger,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
           let iconName = '';
 
           if (route.name === 'Home') iconName = 'home-outline';
@@ -180,15 +188,12 @@ export default function AppNavigator() {
         component={LetsTalkRoom}
       />
 
-      <Stack.Screen
+<Stack.Screen
         name="PrivacySettings"
         component={PrivacySettingsScreen}
+        options={{ title: 'Privacy Settings' }}
       />
 
-      <Stack.Screen
-        name="WatchLive"
-        component={WatchLiveScreen}
-      />
 
     </Stack.Navigator>
   );

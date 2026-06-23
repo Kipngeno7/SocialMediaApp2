@@ -9,13 +9,13 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from "expo-router/react-navigation";
 
 import { auth } from '../firebaseConfig';
 import {supabase} from '../config/supabase';
 import PostCard from '../components/PostCard';
 import { searchPosts, searchUsers } from '../services/searchService';
-import SkeletonContent from 'react-native-skeleton-content';
+
 
 // --- i18next hook import ---
 import { useTranslation } from 'react-i18next';

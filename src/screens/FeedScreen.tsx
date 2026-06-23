@@ -23,14 +23,18 @@ import {
   TextInput,
   Button,
   Animated,
-  Platform,
+  
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
 
 import { Video, AVPlaybackStatus, ResizeMode } from "expo-av";
-import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from 'react-native';
+
+// Dynamically require only on mobile platforms
+const MediaLibrary = Platform.OS !== 'web' ? require('expo-media-library') : null;
+
+import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
 import database from "@react-native-firebase/database";
@@ -639,7 +643,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     try {
       const uri = item.mediaUris[0];
       const filename = uri.split("/").pop();
-      const fileUri = (FileSystem.documentDirectory ?? "") + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       if (!exists) {
@@ -660,7 +664,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     try {
       const uri = item.mediaUris[0];
       const filename = uri.split("/").pop();
-      const fileUri = (FileSystem.documentDirectory ?? "") + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       let shareUri = fileUri;

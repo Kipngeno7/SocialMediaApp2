@@ -26,7 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { app } from "../firebaseConfig";
 import {supabase} from '../config/supabase';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation } from "expo-router/react-navigation";
 import { createPost } from '../services/postService';
 
 
@@ -479,7 +479,7 @@ export default function CreatePostScreen() {
               {isSelected && (
                 <Animated.View
                   style={{
-                    ...StyleSheet.absoluteFillObject,
+                    ...StyleSheet.absoluteFill,
                     borderRadius: 20,
                     padding: 2,
                     transform: [

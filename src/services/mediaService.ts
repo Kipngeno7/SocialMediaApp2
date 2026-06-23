@@ -1,6 +1,6 @@
 // src/services/mediaService.ts
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import RNFS from "react-native-fs";
+import * as FileSystem from 'expo-file-system';
 import { checkImageModeration } from "./moderationService";
 import { supabase } from '../config/supabase'; // Imported your existing Supabase client
 
@@ -15,7 +15,7 @@ const storage = getStorage();
      export const uploadPostMedia = async (file: any, userId: string) => {
        // 1️⃣ AI moderation before upload (Original Safety Checkpoint)
          try {
-             const base64String = await RNFS.readFile(file.uri, "base64");
+             const base64String = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
                  const moderationResult = await checkImageModeration(base64String);
 
                      if (!moderationResult.allowed) {

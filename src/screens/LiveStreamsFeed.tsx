@@ -1,7 +1,7 @@
 // src/screens/LiveStreamsFeed.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Dimensions, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from "expo-router/react-navigation";
 import { getDatabase, ref, onValue } from 'firebase/database';
 import {supabase} from '../config/supabase';
 const { height } = Dimensions.get('window');

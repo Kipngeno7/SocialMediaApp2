@@ -14,10 +14,12 @@ import {
 } from "react-native";
 import Video from "react-native-video";
 import { Ionicons } from "@expo/vector-icons";
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getDatabase, ref, onChildAdded, push, onValue, set } from "firebase/database";
 import {supabase} from '../config/supabase';
 import { updateProfile } from 'firebase/auth';
+
+
 
 import { getAuth, onAuthStateChanged, signInAnonymously, User } from "firebase/auth";
 
@@ -34,7 +36,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Replace: const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
 const db = getDatabase(app);
 const auth = getAuth(app);
 

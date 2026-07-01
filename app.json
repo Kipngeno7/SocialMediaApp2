@@ -5,7 +5,8 @@
     "version": "1.0.0",
     "platforms": [
       "android",
-      "ios", "web"
+      "ios",
+      "web"
     ],
     "extra": {
       "eas": {
@@ -21,7 +22,8 @@
       "buildNumber": "1.0.0"
     },
     "plugins": [
-      
+      "expo-sharing",
+      "expo-status-bar"
     ]
   }
 }

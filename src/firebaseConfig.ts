@@ -4,7 +4,7 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 // Your Firebase config
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCvuMKo2JqYS_FOw0_JQIZJhjz6ke7jheo",
   authDomain: "socialmediaapp-9ea15.firebaseapp.com",
   projectId: "socialmediaapp-9ea15",

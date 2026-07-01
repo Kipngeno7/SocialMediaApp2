@@ -1,9 +1,21 @@
 // src/navigation/AppNavigator.tsx
+import React, { useState, useEffect } from 'react';
+
+
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../firebaseConfig'; 
+import { ActivityIndicator, View } from 'react-native';
+
+
 import { Ionicons } from '@expo/vector-icons';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+
+
+
+
 import { TouchableOpacity } from 'react-native';
 
 import AuthScreen from '../screens/AuthScreen';
@@ -20,6 +32,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 import StreamerDashboard from '../screens/StreamerDashboard';
 import TermsScreen from '../screens/TermsScreen';
 import TrendingScreen from '../screens/TrendingScreen';
+import { PostProvider } from '../context/PostContext';
+
 
 /* ----------- CREATE SCREEN IMPORT ----------- */
 
@@ -32,10 +46,12 @@ import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
 import LetsTalkRoom from '../screens/LetsTalkRoom';
 import PrivacySettingsScreen from '../screens/PrivacySettingsScreen';
 import WatchLiveScreen from '../screens/WatchLiveScreen';
-
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+
+
+
 
 /* ---------------- Bottom Tabs ---------------- */
 
@@ -52,7 +68,7 @@ function MainTabs({ navigation }: any) {
         headerShown: true,
         headerTitleAlign: 'center',
         headerLeft: headerLeftHamburger,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
           let iconName = '';
 
           if (route.name === 'Home') iconName = 'home-outline';
@@ -141,55 +157,64 @@ function AppDrawer() {
 }
 
 /* ---------------- Root Stack ---------------- */
-
 export default function AppNavigator() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Auth" component={AuthScreen} />
-      <Stack.Screen name="Drawer" component={AppDrawer} />
+    const [user, setUser] = useState<any>(null);
+      const [initializing, setInitializing] = useState(true);
 
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen as any} />
+        // Monitor account authentication login state changes dynamically
+          React.useEffect(() => {
+              const subscriber = onAuthStateChanged(auth, (currentUser) => {
+                    setUser(currentUser);
+                          if (initializing) setInitializing(false);
+                              });
+                                  return subscriber; // Unsubscribe listener component hook on unmount
+                                    }, [initializing]);
 
-      <Stack.Screen name="LiveStreamsFeed" component={LiveStreamsFeed} />
-      <Stack.Screen name="LiveViewer" component={LiveStreamScreen} />
-      <Stack.Screen name="LiveStream" component={LiveStreamScreen} />
+                                      // Prevent UI flashing or routing premature updates while Firebase validates session tokens
+                                        if (initializing) {
+                                            return (
+                                                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+                                                          <ActivityIndicator size="large" color="#007AFF" />
+                                                                </View>
+                                                                    );
+                                                                      }
 
-      <Stack.Screen name="Terms" component={TermsScreen} />
+                                                                        return (
+                                                                              <PostProvider>
+                                                                                      <Stack.Navigator screenOptions={{ headerShown: false }}>
 
-      <Stack.Screen
-        name="Dashboard"
-        component={StreamerDashboard}
-        options={{ title: "Streamer Dashboard" }}
-      />
+                                                                        
+                                                                                  {user === null ? (
+                                                                                          /* --- AUTH UNREGISTERED STACK FLOW --- */
+                                                                                                  <Stack.Screen name="Auth" component={AuthScreen} />
+                                                                                                        ) : (
+                                                                                                                /* --- APPS AUTHORIZED STACK FLOW --- */
+                                                                                                                        <>
+                                                                                                                                  <Stack.Screen name="Drawer" component={AppDrawer} />
+                                                                                                                                            <Stack.Screen name="Profile" component={ProfileScreen} />
+                                                                                                                                                      <Stack.Screen name="Chat" component={ChatScreen as any} />
+                                                                                                                                                                <Stack.Screen name="LiveStreamsFeed" component={LiveStreamsFeed} />
+                                                                                                                                                                          <Stack.Screen name="LiveViewer" component={LiveStreamScreen} />
+                                                                                                                                                                                    <Stack.Screen name="LiveStream" component={LiveStreamScreen} />
+                                                                                                                                                                                              <Stack.Screen name="Terms" component={TermsScreen} />
+                                                                                                                                                                                                        <Stack.Screen
+                                                                                                                                                                                                                    name="Dashboard"
+                                                                                                                                                                                                                                component={StreamerDashboard}
+                                                                                                                                                                                                                                            options={{ title: "Streamer Dashboard" }}
+                                                                                                                                                                                                                                                      />
+                                                                                                                                                                                                                                                                <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
+                                                                                                                                                                                                                                                                          <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
+                                                                                                                                                                                                                                                                                    <Stack.Screen name="LetsTalkRoom" component={LetsTalkRoom} />
+                                                                                                                                                                                                                                                                                              <Stack.Screen
+                                                                                                                                                                                                                                                                                                          name="PrivacySettings"
+                                                                                                                                                                                                                                                                                                                      component={PrivacySettingsScreen}
+                                                                                                                                                                                                                                                                                                                                  options={{ title: 'Privacy Settings' }}
+                                                                                                                                                                                                                                                                                                                                            />
+                                                                                                                                                                                                                                                                                                                                                    </>
+                                                                                                                                                                                                                                                                                                                                                          )}
+                                                                                                                                                                                                                                                                                                                                                              </Stack.Navigator>
+                                                                                                                                                                                                                                                                                                                                                              </PostProvider>
+                                                                                                                                                                                                                                                                                                                                                                );
+                                                                                                                                                                                                                                                                                                                                                                }
 
-      {/* ----------- NEW SCREENS ADDED TO STACK ----------- */}
 
-      <Stack.Screen
-        name="BlockedUsers"
-        component={BlockedUsersScreen}
-      />
-
-      <Stack.Screen
-        name="LanguageSettings"
-        component={LanguageSettingsScreen}
-      />
-
-      <Stack.Screen
-        name="LetsTalkRoom"
-        component={LetsTalkRoom}
-      />
-
-      <Stack.Screen
-        name="PrivacySettings"
-        component={PrivacySettingsScreen}
-      />
-
-      <Stack.Screen
-        name="WatchLive"
-        component={WatchLiveScreen}
-      />
-
-    </Stack.Navigator>
-  );
-}

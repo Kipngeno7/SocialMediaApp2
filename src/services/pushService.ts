@@ -4,12 +4,20 @@ import * as Notifications from 'expo-notifications';
 import { saveExpoPushToken } from '../firebaseConfig';
 import { auth } from '../firebaseConfig';
 import { supabase } from '../config/supabase'; 
+import { Platform } from 'react-native';
+
 
 /**
  * Registers the current user for push notifications.
   * Requests permissions using the modern Expo Notifications API.
    */
    export const registerForPushNotifications = async () => {
+    if (Platform.OS === 'web') {
+          console.log("Push notifications are skipped on Expo Web.");
+              return null; 
+                }
+
+    
      if (!auth.currentUser) return;
 
        // Check existing permissions

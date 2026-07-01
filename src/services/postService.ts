@@ -16,7 +16,7 @@ import {
                           where,
                           } from 'firebase/firestore';
                           import { uploadPostMedia } from './mediaService';
-                          import RNFS from 'react-native-fs';
+                          import * as FileSystem from 'expo-file-system';
 
                           import { checkModeration, checkImageModeration } from './moderationService';
                           
@@ -48,10 +48,11 @@ import {
                                                                 // =============================
                                                                   // AI Image Moderation
                                                                     // =============================
-                                                                      if (file) {
-                                                                          try {
-                                                                                const base64String = await RNFS.readFile(file.uri, 'base64');
-                                                                                      const imageResult = await checkImageModeration(base64String);
+                                                                        if (file) {
+                                                                                                try {
+                                                                                                  // use expo-file-system to read file as base64
+                                                                                                  const base64String = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+                                                                                                    const imageResult = await checkImageModeration(base64String);
                                                                                             if (!imageResult.allowed) {
                                                                                                     alert(imageResult.reason);
                                                                                                             return;

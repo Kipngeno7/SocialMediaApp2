@@ -27,6 +27,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/
 import { app } from "../firebaseConfig";
 import {supabase} from '../config/supabase';
 import { useNavigation } from "@react-navigation/native";
+
 import { createPost } from '../services/postService';
 
 
@@ -176,7 +177,9 @@ export default function CreatePostScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images', //  New
+
+    
       allowsMultipleSelection: true,
       selectionLimit: 10 - imageUris.length,
       quality: 1,
@@ -197,7 +200,9 @@ export default function CreatePostScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: 'videos', //  New
+
+    
       allowsMultipleSelection: true,
       selectionLimit: 5 - videoUris.length,
     });
@@ -381,7 +386,7 @@ export default function CreatePostScreen() {
         text: postText.trim(),
         category: selectedCategory || "Other",
         otherCategoryText:
-          selectedCategory === "others" ? customCategory : "",
+          selectedCategory === "Other" ? customCategory : "",
 
         mediaUris: [...uploadedImages, ...uploadedVideos],
         audioUris: uploadedAudios,
@@ -479,7 +484,7 @@ export default function CreatePostScreen() {
               {isSelected && (
                 <Animated.View
                   style={{
-                    ...StyleSheet.absoluteFillObject,
+                    ...StyleSheet.absoluteFill,
                     borderRadius: 20,
                     padding: 2,
                     transform: [
@@ -528,7 +533,7 @@ export default function CreatePostScreen() {
       </View>
 
       {/* Show custom category input if "Others" selected */}
-      {selectedCategory === "others" && (
+      {selectedCategory === "Other" && (
         <TextInput
           placeholder="Specify category"
           value={customCategory}
@@ -552,46 +557,43 @@ export default function CreatePostScreen() {
         {postText.length}/{CHARACTER_LIMIT}
       </Text>
 
-      {/* IMAGE GRID */}
-      <FlatList
-        data={imageUris}
-        keyExtractor={(item) => item}
-        numColumns={3}
-        renderItem={({ item }) => (
-          <View style={styles.mediaContainer}>
-            <Image source={{ uri: item }} style={styles.imagePreview} />
+            {/* IMAGE GRID */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 8 }}>
+                          {imageUris.map((item) => (
+                                    <View key={item} style={styles.mediaContainer}>
+                                                <Image source={{ uri: item }} style={styles.imagePreview} />
+                                                            <TouchableOpacity
+                                                                          style={styles.deleteButton}
+                                                                                        onPress={() => removeImage(item)}
+                                                                                                    >
+                                                                                                                  <Ionicons name="close-circle" size={22} color="red" />
+                                                                                                                              </TouchableOpacity>
+                                                                                                                                        </View>
+                                                                                                                                                ))}
+                                                                                                                                                      </View>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => removeImage(item)}
-            >
-              <Ionicons name="close-circle" size={22} color="red" />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      
+      
 
-      {/* VIDEO GRID */}
-      <FlatList
-        data={videoUris}
-        keyExtractor={(item) => item}
-        numColumns={3}
-        renderItem={({ item }) => (
-          <View style={styles.mediaContainer}>
-            <Image
-              source={{ uri: videoThumbnails[item] }}
-              style={styles.imagePreview}
-            />
+            {/* VIDEO GRID */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 8 }}>
+                          {videoUris.map((item) => (
+                                    <View key={item} style={styles.mediaContainer}>
+                                                <Image
+                                                              source={{ uri: videoThumbnails[item] || item }}
+                                                                            style={styles.imagePreview}
+                                                                                        />
+                                                                                                    <TouchableOpacity
+                                                                                                                  style={styles.deleteButton}
+                                                                                                                                onPress={() => removeVideo(item)}
+                                                                                                                                            >
+                                                                                                                                                          <Ionicons name="close-circle" size={22} color="red" />
+                                                                                                                                                                      </TouchableOpacity>
+                                                                                                                                                                                </View>
+                                                                                                                                                                                        ))}
+                                                                                                                                                                                              </View>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => removeVideo(item)}
-            >
-              <Ionicons name="close-circle" size={22} color="red" />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      
 
       {/* AUDIO LIST */}
       {audioUris.map((uri, index) => (
@@ -614,10 +616,7 @@ export default function CreatePostScreen() {
         style={styles.input}
       />
 
-      {/* MEDIA PREVIEW */}
-      {mediaUris.map((uri) => (
-        <Image key={uri} source={{ uri }} style={styles.mediaPreview} />
-      ))}
+      
 
       {/* MEDIA + ACTION BUTTON ROW */}
       <View style={styles.buttonsRow}>
@@ -735,14 +734,13 @@ export default function CreatePostScreen() {
 
           <Text>{postText}</Text>
 
-          <FlatList
-            data={mediaUris}
-            horizontal
-            keyExtractor={(i) => i}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={styles.mediaPreview} />
-            )}
-          />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: "row", marginVertical: 10 }}>
+                                  {mediaUris.map((uri) => (
+                                                <Image key={uri} source={{ uri }} style={[styles.mediaPreview, { marginRight: 8 }]} />
+                                                            ))}
+                                                                      </ScrollView>
+                                                                      
+            
 
           <TouchableOpacity
             onPress={() => setPreviewVisible(false)}

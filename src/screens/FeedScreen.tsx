@@ -23,17 +23,21 @@ import {
   TextInput,
   Button,
   Animated,
-  Platform,
+  
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
 
 import { Video, AVPlaybackStatus, ResizeMode } from "expo-av";
-import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
+import { Platform } from 'react-native';
 
-import database from "@react-native-firebase/database";
+// Dynamically require only on mobile platforms
+const MediaLibrary = Platform.OS !== 'web' ? require('expo-media-library') : null;
+
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { getDatabase, ref, onValue } from 'firebase/database';
+
 import axios from "axios";
 
 import AnimatedReanimated, {
@@ -639,7 +643,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     try {
       const uri = item.mediaUris[0];
       const filename = uri.split("/").pop();
-      const fileUri = (FileSystem.documentDirectory ?? "") + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       if (!exists) {
@@ -660,7 +664,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     try {
       const uri = item.mediaUris[0];
       const filename = uri.split("/").pop();
-      const fileUri = (FileSystem.documentDirectory ?? "") + filename;
+      const fileUri = FileSystem.documentDirectory + filename;
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       let shareUri = fileUri;
@@ -1126,43 +1130,51 @@ export default function FeedScreen() {
   });
 
   // ── Firebase & socket setup ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (auth.currentUser) {
-      connectSocket(auth.currentUser.uid);
-      subscribeToNewPosts((newPost: any) =>
-        setSocketPosts((prev) => [newPost, ...prev])
-      );
-    }
+    // ─── Firebase & socket setup ────────────────────────────────────────────────
+      useEffect(() => {
+          if (auth.currentUser) {
+                connectSocket(auth.currentUser.uid);
+                      subscribeToNewPosts((newPost: any) =>
+                              setSocketPosts((prev) => [newPost, ...prev])
+                                    );
+                                        }
 
-    const walletRef = database().ref(`wallets/${streamerId}`);
-    walletRef.on("value", (snapshot: any) => {
-      const data = snapshot.val();
-      if (data && data.balance) setWalletBalance(data.balance);
-    });
+                                            const db = getDatabase();
 
-    const donationsRef = database().ref(`liveDonations/${streamerId}`);
-    donationsRef.on("value", (snapshot: any) => {
-      const data = snapshot.val();
-      if (data) {
-        const totals: Record<string, number> = {};
-        Object.values(data).forEach((donation: any) => {
-          const donorName = donation.user || "Anonymous";
-          totals[donorName] =
-            (totals[donorName] || 0) + donation.streamerAmount;
-        });
-        const sorted = Object.entries(totals)
-          .map(([user, total]) => ({ user, total }))
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 5);
-        setTopFans(sorted);
-      }
-    });
+                                                // Web-compatible wallet listener
+                                                    const walletRef = ref(db, `wallets/${streamerId}`);
+                                                        const unsubscribeWallet = onValue(walletRef, (snapshot) => {
+                                                              const data = snapshot.val();
+                                                                    if (data && data.balance) setWalletBalance(data.balance);
+                                                                        });
 
-    return () => {
-      walletRef.off();
-      donationsRef.off();
-    };
-  }, [auth.currentUser]);
+                                                                            // Web-compatible donations listener
+                                                                                const donationsRef = ref(db, `liveDonations/${streamerId}`);
+                                                                                    const unsubscribeDonations = onValue(donationsRef, (snapshot) => {
+                                                                                          const data = snapshot.val();
+                                                                                                if (data) {
+                                                                                                        const totals: Record<string, number> = {};
+                                                                                                                Object.values(data).forEach((donation: any) => {
+                                                                                                                          const donorName = donation.user || "Anonymous";
+                                                                                                                                    totals[donorName] =
+                                                                                                                                                (totals[donorName] || 0) + donation.streamerAmount;
+                                                                                                                                                        });
+                                                                                                                                                                const sorted = Object.entries(totals)
+                                                                                                                                                                          .map(([user, total]) => ({ user, total }))
+                                                                                                                                                                                    .sort((a, b) => b.total - a.total)
+                                                                                                                                                                                              .slice(0, 5);
+                                                                                                                                                                                                      setTopFans(sorted);
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                    // Clean up the listeners when the component unmounts
+                                                                                                                                                                                                                        return () => {
+                                                                                                                                                                                                                              unsubscribeWallet();
+                                                                                                                                                                                                                                    unsubscribeDonations();
+                                                                                                                                                                                                                                        };
+                                                                                                                                                                                                                                          }, [auth.currentUser]);
+                                                                                                                                                                                                                                          
+
 
   // ── Floating donation animation ───────────────────────────────────────────────
   const addFloatingDonation = (

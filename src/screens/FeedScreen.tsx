@@ -80,7 +80,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   "Personal/Warm Touch": "💛",
   "Public Information": "🟦",
   Sociocultural: "🎭",
-  Other: "⚪",
+  Others: "⚪",
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -441,7 +441,7 @@ const CommentItem = ({
 
 // ─── PostItem ──────────────────────────────────────────────────────────────────
 
-const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
+const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addFloatingDonation }: any) => {
   const {
     boostPostRanking,
     editPost,
@@ -638,12 +638,21 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     else startLive?.(item.id);
   };
 
+  const getLocalFileUri = (uri: string) => {
+    const sanitizedUri = uri.split("?")[0];
+    const fallbackName = `media-${Date.now()}.bin`;
+    const filename = sanitizedUri.split("/").pop() || fallbackName;
+    // Use cacheDirectory (or documentDirectory) as a writable base directory for downloads
+    // cast to any because expo-file-system types may differ across SDK versions
+    const baseDirectory = (FileSystem as any).cacheDirectory ?? (FileSystem as any).documentDirectory ?? "";
+    return `${baseDirectory}${filename}`;
+  };
+
   const handleDownload = async () => {
     if (!item?.mediaUris?.[0]) return;
     try {
       const uri = item.mediaUris[0];
-      const filename = uri.split("/").pop();
-      const fileUri = FileSystem.documentDirectory + filename;
+      const fileUri = getLocalFileUri(uri);
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       if (!exists) {
@@ -663,8 +672,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime }: any) => {
     if (!item?.mediaUris?.[0]) return;
     try {
       const uri = item.mediaUris[0];
-      const filename = uri.split("/").pop();
-      const fileUri = FileSystem.documentDirectory + filename;
+      const fileUri = getLocalFileUri(uri);
 
       const { exists } = await FileSystem.getInfoAsync(fileUri);
       let shareUri = fileUri;
@@ -904,26 +912,75 @@ const handleSendReply = () => {
         </TouchableOpacity>
 
         {/* Pay dropdown */}
-        <View style={{ alignItems: "center" }}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setPayMenuVisible((prev) => !prev)}
-          >
-            <Text style={styles.iconText}>💰</Text>
-            <Text style={styles.countText}>Pay</Text>
-          </TouchableOpacity>
+        {/* Unified Expandable Support Button & Menu */}
+        {/* Unified Expandable Support Button & Menu */}
+                <View style={{ alignItems: "center", position: "relative" }}>
+                          <TouchableOpacity
+                                      style={styles.iconButton}
+                                                  onPress={() => setPayMenuVisible((prev) => !prev)}
+                                                            >
+                                                                        <Text style={styles.iconText}>💰</Text>
+                                                                                    <Text style={styles.countText}>Support</Text>
+                                                                                              </TouchableOpacity>
 
-          {payMenuVisible && (
-            <View style={styles.payDropdown}>
-              <TouchableOpacity onPress={handleMpesaPayment}>
-                <Text style={styles.payOption}>🇰🇪 MPESA</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleStripePayment}>
-                <Text style={styles.payOption}>🌍 Stripe</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+                                                                                                        {payMenuVisible && (
+                                                                                                                    <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
+                                                                                                                                  <TouchableOpacity onPress={() => handleDonation("Daraja", 50)}>
+                                                                                                                                                  <Text style={styles.payOption}>🇰🇪 M-Pesa</Text>
+                                                                                                                                                                </TouchableOpacity>
+                                                                                                                                                                              <TouchableOpacity onPress={() => handleDonation("PayPal", 50)}>
+                                                                                                                                                                                              <Text style={styles.payOption}>💳 PayPal</Text>
+                                                                                                                                                                                                            </TouchableOpacity>
+                                                                                                                                                                                                                          <TouchableOpacity onPress={() => handleDonation("Stripe", 50)}>
+                                                                                                                                                                                                                                          <Text style={styles.payOption}>🌍 Stripe</Text>
+                                                                                                                                                                                                                                                        </TouchableOpacity>
+                                                                                                                                                                                                                                                                      <TouchableOpacity onPress={() => handleDonation("MTN", 50)}>
+                                                                                                                                                                                                                                                                                      <Text style={styles.payOption}>🟡 MTN</Text>
+                                                                                                                                                                                                                                                                                                    </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                  <TouchableOpacity onPress={() => handleDonation("Airtel", 50)}>
+                                                                                                                                                                                                                                                                                                                                  <Text style={styles.payOption}>🔴 Airtel</Text>
+                                                                                                                                                                                                                                                                                                                                                </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                              <TouchableOpacity onPress={() => handleDonation("GCash", 50)}>
+                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.payOption}>🔵 GCash</Text>
+                                                                                                                                                                                                                                                                                                                                                                                            </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                                                                          <TouchableOpacity onPress={() => handleDonation("Bank", 50)}>
+                                                                                                                                                                                                                                                                                                                                                                                                                          <Text style={styles.payOption}>🏦 Bank Card</Text>
+                                                                                                                                                                                                                                                                                                                                                                                                                                        </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    </View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                              )}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </View>
+
+                    
+                
+                      
+                          
+
+                  
+                      
+                                
+                                        
+                                              
+                                                      
+                                                        
+                                                                  
+                                                                          
+                                                                                  
+                                                                                            
+                                                                                                    
+                                                                                                            
+                                                                                                                  
+                                                                                                                          
+                                                                                                                              
+                                                                                                                                      
+                                                                                                                                            
+                                                                                                                                                  
+                                                                                                                                                          
+                                                                                                                                                                  
+                                                                                                                                                                          
+                                                                                                                                                                                  
+                                                                                                                                                                            
+                                                                                                                                                                                    
+
 
         {/* Subscribe */}
         <TouchableOpacity style={styles.iconButton} onPress={handleSubscribe}>
@@ -1073,28 +1130,36 @@ const handleSendReply = () => {
 });
 
 // ─── FeedScreen ────────────────────────────────────────────────────────────────
-
 export default function FeedScreen() {
-    // 👇 Combine everything into this single line so TypeScript doesn't throw a duplicate error
-      const { rankedPosts = [], editPost, isLoading, fetchPosts } = usePosts();
+    const { rankedPosts = [], editPost, isLoading, fetchPosts } = usePosts();
 
-        // ── Firebase / socket state ───────────────────────────────────────────
-          const [socketPosts, setSocketPosts] = useState<any[]>([]);
-            const [popup, setPopup] = useState<string | null>(null);
-              const [walletBalance, setWalletBalance] = useState(0);
-                const [floatingDonations, setFloatingDonations] = useState<
-                    {
-                          id: string;
-                                amount: number;
-                                      method: string;
-                                            user: string;
-                                                  animatedValue: Animated.Value;
-                                                      }[]
-                                                        >([]);
-                                                          const [topFans, setTopFans] = useState<{ user: string; total: number }[]>([]);
+      // --- Constants & System Settings ---
+        const streamerId = "STREAM01";
+          const PLATFORM_CUT = 0.2;
 
-                                                            const streamerId = "STREAM01";
-                                                              const PLATFORM_CUT = 0.2;
+            // --- Payment, Leaderboard & Animation States ---
+              const [popup, setPopup] = useState<string | null>(null);
+                const [topFans, setTopFans] = useState<{ user: string; total: number }[]>([]);
+                  const [floatingDonations, setFloatingDonations] = useState<
+                      {
+                            id: string;
+                                  amount: number;
+                                        method: string;
+                                              user: string;
+                                                    animatedValue: Animated.Value;
+                                                        }[]
+                                                          >([]);
+
+
+
+                                                                    
+
+              
+                    
+                        
+                            
+
+                                                            
 
                                                                 // ── Feed state ───────────────────────────────────────────
                                                                   // 👇 Add your mounting hook right here to trigger the sync cleanly
@@ -1111,6 +1176,7 @@ export default function FeedScreen() {
   const [postReactions, setPostReactions] = useState<
     Record<string, Record<string, number>>
   >({});
+  const [socketPosts, setSocketPosts] = useState<any[]>([]);
 
   // ── [FEATURE 2] User-interest map: tracks which categories/authors the user engages with ──
   const [userInterestMap, setUserInterestMap] = useState<Record<string, number>>({});
@@ -1139,183 +1205,114 @@ export default function FeedScreen() {
                                     );
                                         }
 
-                                            const db = getDatabase();
+                                            
 
-                                                // Web-compatible wallet listener
-                                                    const walletRef = ref(db, `wallets/${streamerId}`);
-                                                        const unsubscribeWallet = onValue(walletRef, (snapshot) => {
-                                                              const data = snapshot.val();
-                                                                    if (data && data.balance) setWalletBalance(data.balance);
-                                                                        });
+                                      
+                                                                      
+                                                                            
+                                                                                  
+                                                                                      
+                                                                                                
+                                                                                                    
+                                                                                                                
+                                                                                                        
+                                                                                                                          
+                                                                                                                                                  
+                                                                                                                                                        
+                                                                                                                                                                  
+                                                                                                                                                                      
+                                                                                                                                                                                          
+                                                                                                                                                                                          
+                                                                                                                                                                                                            
+                                                                                                                                                                                                            
 
-                                                                            // Web-compatible donations listener
-                                                                                const donationsRef = ref(db, `liveDonations/${streamerId}`);
-                                                                                    const unsubscribeDonations = onValue(donationsRef, (snapshot) => {
-                                                                                          const data = snapshot.val();
-                                                                                                if (data) {
-                                                                                                        const totals: Record<string, number> = {};
-                                                                                                                Object.values(data).forEach((donation: any) => {
-                                                                                                                          const donorName = donation.user || "Anonymous";
-                                                                                                                                    totals[donorName] =
-                                                                                                                                                (totals[donorName] || 0) + donation.streamerAmount;
-                                                                                                                                                        });
-                                                                                                                                                                const sorted = Object.entries(totals)
-                                                                                                                                                                          .map(([user, total]) => ({ user, total }))
-                                                                                                                                                                                    .sort((a, b) => b.total - a.total)
-                                                                                                                                                                                              .slice(0, 5);
-                                                                                                                                                                                                      setTopFans(sorted);
-                                                                                                                                                                                                            }
-                                                                                                                                                                                                                });
-
-                                                                                                                                                                                                                    // Clean up the listeners when the component unmounts
-                                                                                                                                                                                                                        return () => {
-                                                                                                                                                                                                                              unsubscribeWallet();
-                                                                                                                                                                                                                                    unsubscribeDonations();
-                                                                                                                                                                                                                                        };
+                                                                                                                                                                                                            
+                                                                                                                                                                                                              
+                                                                                                                                                                                                                          
+                                                                                                                                                                                                                              
                                                                                                                                                                                                                                           }, [auth.currentUser]);
                                                                                                                                                                                                                                           
 
 
   // ── Floating donation animation ───────────────────────────────────────────────
-  const addFloatingDonation = (
-    amount: number,
-    method: string,
-    user: string
-  ) => {
-    const id = `${Date.now()}-${Math.random()}`;
-    const newDonation = {
-      id,
-      amount,
-      method,
-      user,
-      animatedValue: new Animated.Value(0),
-    };
-    setFloatingDonations((prev) => [...prev, newDonation]);
-
-    Animated.timing(newDonation.animatedValue, {
-      toValue: 1,
-      duration: 3000,
-      useNativeDriver: true,
-    }).start(() => {
-      setFloatingDonations((prev) => prev.filter((d) => d.id !== id));
-    });
-  };
+  
 
   // ── Payment handlers ──────────────────────────────────────────────────────────
-  const handleDonation = async (
-    method: "Daraja" | "Stripe",
-    amount = 50
-  ) => {
-    try {
-      const streamerAmount = amount * (1 - PLATFORM_CUT);
-      const donorName = auth.currentUser?.displayName || "Anonymous";
+  
 
-      if (method === "Daraja") {
-        const res = await axios.post(
-          "http://YOUR_IP:3000/api/mpesa/stkpush",
-          {
-            phoneNumber:
-              auth.currentUser?.phoneNumber || "2547XXXXXXXX",
-            amount,
-            accountReference: streamerId,
-            transactionDesc: "Tip for Streamer",
-          }
-        );
-        if (!res.data.success) throw new Error("M-Pesa failed");
-      } else if (method === "Stripe") {
-        await axios.post("http://YOUR_IP:3000/api/stripe/charge", {
-          amount,
-          currency: "usd",
-          streamerId,
-        });
-      }
+    // --- Floating donation animation ---
+      const addFloatingDonation = (amount: number, method: string, user: string) => {
+          const id = `${Date.now()}-${Math.random()}`;
+              const newDonation = {
+                    id,
+                          amount,
+                                method,
+                                      user,
+                                            animatedValue: new Animated.Value(0),
+                                                };
+                                                    setFloatingDonations((prev) => [...prev, newDonation]);
 
-      setPopup(
-        `${method} Payment Successful! Streamer receives ${streamerAmount}`
-      );
-      setTimeout(() => setPopup(null), 10000);
+                                                        Animated.timing(newDonation.animatedValue, {
+                                                              toValue: 1,
+                                                                    duration: 3000,
+                                                                          useNativeDriver: true,
+                                                                              }).start(() => {
+                                                                                    setFloatingDonations((prev) => prev.filter((d) => d.id !== id));
+                                                                                        });
+                                                                                          };
 
-      database()
-        .ref(`liveDonations/${streamerId}`)
-        .push({
-          method,
-          amount,
-          streamerAmount,
-          platformFee: amount * PLATFORM_CUT,
-          user: donorName,
-          timestamp: Date.now(),
-        });
+                                                                                            // --- Payment handlers ---
+                                                                                              const handleDonation = async (method: "Daraja" | "Stripe" | "PayPal" | "MTN" | "Airtel" | "GCash" | "Bank", amount = 50) => {
+                                                                                                  try {
+                                                                                                        const streamerAmount = amount * (1 - PLATFORM_CUT);
+                                                                                                              const donorName = auth.currentUser?.displayName || "Anonymous";
 
-      database()
-        .ref(`wallets/${streamerId}/balance`)
-        .transaction(
-          (balance: number | null) => (balance || 0) + streamerAmount
-        );
+                                                                                                                    // Call your backend server endpoints safely
+                                                                                                                      if (method === "Daraja") {
+                                                                                                                                const res = await axios.post("http://YOUR_IP:3000/api/mpesa/stkpush", {
+                                                                                                                                          phoneNumber: auth.currentUser?.phoneNumber || "2547XXXXXXXX",
+                                                                                                                                                    amount,
+                                                                                                                                                              accountReference: streamerId,
+                                                                                                                                                                        transactionDesc: "Tip",
+                                                                                                                                                                                });
+                                                                                                                                                                                        if (!res.data.success) throw new Error("M-Pesa failed");
+                                                                                                                                                                                              } else {
+                                                                                                                                                                                                      await axios.post("http://YOUR_IP:3000/api/stripe/charge", {
+                                                                                                                                                                                                                amount,
+                                                                                                                                                                                                                          currency: "usd",
+                                                                                                                                                                                                                                    streamerId,
+                                                                                                                                                                                                                                              method,
+                                                                                                                                                                                                                                                      });
+                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                  // 🔼 END OF THE PASTED BLOCK 🔼
 
-      addFloatingDonation(streamerAmount, method, donorName);
-    } catch (err: any) {
-      Alert.alert("Error", err.message);
-    }
-  };
+                                                                                                                                                                                                                                                                        setPopup(`${method} Payment Successful! Contributed $${streamerAmount}`);
+                                                                                                                                                                                                                                                                              setTimeout(() => setPopup(null), 6000);
 
-  const withdrawToMobile = async (method: string, country?: string) => {
-    try {
-      if (walletBalance <= 0) {
-        Alert.alert("No funds", "Your wallet is empty");
-        return;
-      }
-
-      const payload: any = { streamerId, amount: walletBalance };
-
-      switch (method) {
-        case "M-Pesa":
-          payload.phoneNumber = "2547XXXXXXXX";
-          break;
-        case "PayPal":
-          payload.paypalEmail = "STREAMER_PAYPAL_EMAIL";
-          break;
-        case "Stripe":
-          payload.stripeAccountId = "STREAMER_STRIPE_ACCOUNT";
-          break;
-        case "MTN":
-          payload.phoneNumber = "MTN_NUMBER";
-          payload.country = country || "GH";
-          break;
-        case "Airtel":
-          payload.phoneNumber = "AIRTEL_NUMBER";
-          payload.country = country || "TZ";
-          break;
-        case "GCash":
-          payload.phoneNumber = "GCASH_NUMBER";
-          payload.country = country || "PH";
-          break;
-        case "Bank":
-          payload.bankAccount = "STREAMER_BANK";
-          payload.country = country || "US";
-          break;
-        default:
-          throw new Error("Unsupported withdrawal method");
-      }
-
-      await axios.post("http://YOUR_IP:3000/api/withdraw", payload);
-
-      setPopup(`Withdrawal of ${walletBalance} via ${method} successful`);
-      setTimeout(() => setPopup(null), 10000);
-
-      database().ref(`wallets/${streamerId}`).set({ balance: 0 });
-    } catch (err: any) {
-      Alert.alert("Withdrawal failed", err.message);
-    }
-  };
+                                                                                                                                                                                                                                                                                    // Trigger the floating bubble element
+                                                                                                                                                                                                                                                                                          addFloatingDonation(streamerAmount, method, donorName);
+                                                                                                                                                                                                                                                                                              } catch (err: any) {
+                                                                                                                                                                                                                                                                                                    Alert.alert("Error", err.message);
+                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                          };
+                                                                                                                        
   // ── Category filter ───────────────────────────────────────────────────────────
   const toggleCategory = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
-    setPage(1);
-  };
+        if (category === "All") {
+              setSelectedCategories([]); // Clears filters to show all combined
+                  } else {
+                        setSelectedCategories((prev) =>
+                                prev.includes(category)
+                                          ? prev.filter((c) => c !== category)
+                                                    : [...prev, category]
+                                                          );
+                                                              }
+                                                                  setPage(1);
+                                                                    };
+
+  
+
+
 
   // ── Watch time handler ────────────────────────────────────────────────────────
   const handleWatchTime = (postId: string, seconds: number) => {
@@ -1408,7 +1405,7 @@ export default function FeedScreen() {
 
       return scoreB - scoreA;
     });
-  }, [rankedPosts, socketPosts, selectedCategories, postReactions, userInterestMap]);
+  }, [rankedPosts, setSocketPosts, selectedCategories, postReactions, userInterestMap]);
 
   // ── Pagination ────────────────────────────────────────────────────────────────
   const paginatedPosts = useMemo(
@@ -1450,101 +1447,135 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       {/* ── Donation section ─────────────────────────────────────────────────── */}
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-        Support Streamer
-      </Text>
-
-      <TouchableOpacity
-        onPress={() => handleDonation("Daraja")}
-        style={{
-          backgroundColor: "#FFA500",
-          padding: 12,
-          marginBottom: 10,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{ color: "white", fontWeight: "bold" }}>
-          Pay with M-Pesa
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => handleDonation("Stripe")}
-        style={{
-          backgroundColor: "#6772E5",
-          padding: 12,
-          marginBottom: 20,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{ color: "white", fontWeight: "bold" }}>
-          Pay with Stripe
-        </Text>
-      </TouchableOpacity>
+      
 
       {/* ── Streamer wallet ───────────────────────────────────────────────────── */}
-      <View
-        style={{
-          backgroundColor: "#f5f5f5",
-          padding: 15,
-          borderRadius: 10,
-          marginBottom: 20,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-          Streamer Wallet
-        </Text>
-        <Text style={{ fontSize: 22, marginVertical: 10 }}>
-          Balance: {walletBalance}
-        </Text>
 
-        {["M-Pesa", "PayPal", "Stripe", "MTN", "Airtel", "GCash", "Bank"].map(
-          (method, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => withdrawToMobile(method)}
-              style={{
-                backgroundColor:
-                  method === "M-Pesa" ||
-                  method === "MTN" ||
-                  method === "Airtel" ||
-                  method === "GCash"
-                    ? "#34A853"
-                    : "#FF6600",
-                padding: 10,
-                borderRadius: 8,
-                marginTop: 10,
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                Withdraw via {method}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
-      </View>
 
       {/* ── Category filter ───────────────────────────────────────────────────── */}
-      <View style={styles.categoryFilterContainer}>
-        {Object.keys(CATEGORIES).map((key) => {
-          const cat = (CATEGORIES as any)[key].label;
-          const color = (CATEGORIES as any)[key].color;
-          const isSelected = selectedCategories.includes(cat);
+  {/* ─── Multi-Selection Categories Row Wrap (Locks on Top) ─── */}
+  <View style={styles.categoryFilterContainer}>
+    <TouchableOpacity
+        key="All-Toggle"
+            onPress={() => toggleCategory("All")}
+                style={[
+                      styles.categoryButton,
+                            { 
+                                    borderColor: "#ffffff", 
+                                            backgroundColor: selectedCategories.length === 0 ? "rgba(255,255,255,0.15)" : "transparent" 
+                                                  }
+                                                      ]}
+                                                        >
+                                                            <Text style={{ color: "#ffffff", fontWeight: "bold" }}>All</Text>
+                                                                {selectedCategories.length === 0 && (
+                                                                      <Text style={styles.tickMark}>✓</Text>
+                                                                          )}
+                                                                            </TouchableOpacity>
 
-          return (
-            <TouchableOpacity
-              key={cat}
-              onPress={() => toggleCategory(cat)}
-              style={[styles.categoryButton, { borderColor: color }]}
-            >
-              <Text style={{ color: color, fontWeight: "bold" }}>{cat}</Text>
-              {isSelected && (
-                <Text style={styles.tickMark}>✓</Text>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                                                                              {Object.keys(CATEGORY_EMOJI).map((key) => {
+                                                                                  const cat = CATEGORY_EMOJI[key] ? key : "Other";
+                                                                                      const emoji = CATEGORY_EMOJI[key] || "⚪";
+                                                                                          const isSelected = selectedCategories.includes(cat);
+
+                                                                                              // Pull custom colors if they exist in your constants file configuration
+                                                                                                  const color = (CATEGORIES as any)[key]?.color || "#ffffff";
+
+                                                                                                      return (
+                                                                                                            <TouchableOpacity
+                                                                                                                    key={cat}
+                                                                                                                            onPress={() => toggleCategory(cat)}
+                                                                                                                                    style={[
+                                                                                                                                              styles.categoryButton, 
+                                                                                                                                                        { 
+                                                                                                                                                                    borderColor: isSelected ? "#ff0050" : color,
+                                                                                                                                                                                backgroundColor: isSelected ? "rgba(255,255,255,0.12)" : "transparent"
+                                                                                                                                                                                          }
+                                                                                                                                                                                                  ]}
+                                                                                                                                                                                                        >
+                                                                                                                                                                                                                <Text style={{ color: isSelected ? "#ff0050" : color, fontWeight: "bold" }}>
+                                                                                                                                                                                                                          {cat} {emoji}
+                                                                                                                                                                                                                                  </Text>
+                                                                                                                                                                                                                                          {isSelected && (
+                                                                                                                                                                                                                                                    <Text style={styles.tickMark}>✓</Text>
+                                                                                                                                                                                                                                                            )}
+                                                                                                                                                                                                                                                                  </TouchableOpacity>
+                                                                                                                                                                                                                                                                      );
+                                                                                                                                                                                                                                                                        })}
+                                                                                                                                                                                                                                                                        </View>
+
+                                                          
+                                                                
+                                                                            
+                                                                                      
+                                                                                                          
+                                                                                                                    
+                                                                                                                        
+                                                                                                                                      
+                                                                                                                                                  
+                                                                                                                                                        
+                                                                                                                                                                  
+                                                                                                                                                                          
+                                                                                                                                                                                  
+                                                                                                                                                                                                    
+
+                                                                                                                                                                                                          
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+
+      
+      
+      
+          
+            
+                  
+                      
+                          
+                                  
+                                      
+
+                                            
+                                                    
+                                                          
+
+                                                                        
+                                                                                
+                                                                                    
+                                                                                      
+                                                                                                          
+                                                                                                                      
+                                                                                                                                            
+                                                                                                                                        
+                                                                                                                                                                                    
+                                                                                                                                                                                              
+                                                                                                                                                                                    
+                                                                                                                                                                                                                    
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                        
+
 
       {/* ── User posts summary strip ──────────────────────────────────────────── */}
       <FlatList
@@ -1599,6 +1630,8 @@ export default function FeedScreen() {
             item={item}
             isActive={item.id === activePostId}
             onWatchTime={handleWatchTime}
+            handleDonation={handleDonation}
+            addFloatingDonation={addFloatingDonation}
           />
         )}
         // ── TikTok snap behaviour ─────────────────────────────────────────────
@@ -1681,11 +1714,35 @@ export default function FeedScreen() {
           <Text style={{ color: "white", fontWeight: "bold" }}>{popup}</Text>
         </View>
       )}
+      {/* ─── Floating donation animations overlay layer ───────────────────────── */}
+            {floatingDonations.map((donation) => (
+                    <Animated.View
+                              key={donation.id}
+                                        style={{
+                                                    position: "absolute",
+                                                                bottom: 120,
+                                                                            left: Math.random() * 180 + 20,
+                                                                                        opacity: donation.animatedValue,
+                                                                                                    transform: [
+                                                                                                                  {
+                                                                                                                                  translateY: donation.animatedValue.interpolate({
+                                                                                                                                                    inputRange:[0, 1],
+                                                                                                                                                                      outputRange: [0, -200],
+                                                                                                                                                                                      }),
+                                                                                                                                                                                                    },
+                                                                                                                                                                                                                ],
+                                                                                                                                                                                                                            zIndex: 999,
+                                                                                                                                                                                                                                      }}
+                                                                                                                                                                                                                                              >
+                                                                                                                                                                                                                                                        <Text style={{ fontWeight: "bold", fontSize: 14, color: "#fff", backgroundColor: "rgba(0,0,0,0.75)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' }}>
+                                                                                                                                                                                                                                                                    🎉 {donation.user} supported via {donation.method} (${donation.amount})
+                                                                                                                                                                                                                                                                              </Text>
+                                                                                                                                                                                                                                                                                      </Animated.View>
+                                                                                                                                                                                                                                                                                            ))}
 
-    </View>
-  );
-}
-
+                                                                                                                                                                                                                                                                                                </View>
+                                                                                                                                                                                                                                                                                                  );
+                                                                                                                                                                                                                                                                                                  }
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -1831,33 +1888,52 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   categoryFilterContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingVertical: 10,
-    backgroundColor: "#fff",
-  },
-  categoryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 2,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  tickMark: {
-    marginLeft: 6,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  payDropdown: {
-    backgroundColor: "#222",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginTop: 5,
-  },
+      backgroundColor: "#111111", // Solid clean backdrop container strip
+        flexDirection: "row",
+          flexWrap: "wrap",          // CRUCIAL: Forces categories into two rows instead of escaping off-screen
+            justifyContent: "flex-start",
+              alignItems: "center",
+                paddingHorizontal: 10,
+                  paddingTop: Platform.OS === 'ios' ? 50 : 25,
+                    paddingBottom: 12,
+                      zIndex: 10,
+                      },
+                      categoryButton: {
+                        flexDirection: "row",
+                          alignItems: "center",
+                            borderRadius: 20,
+                              borderWidth: 1.5,
+                                paddingHorizontal: 12,
+                                  paddingVertical: 5,
+                                    marginRight: 6,
+                                      marginBottom: 6,          // Clean gap spacing between row 1 and row 2 items
+                                      },
+
+  
+                                tickMark: {
+                                       marginLeft: 6,
+                                            fontWeight: "bold",
+                                                 color: "#fff",
+                                                    },
+                                
+                                payDropdown: {
+                                  position: 'absolute',
+                                    backgroundColor: "rgba(20, 20, 20, 0.95)",
+                                      paddingVertical: 10,
+                                        paddingHorizontal: 14,
+                                          borderRadius: 16,
+                                            zIndex: 99,
+                                              borderWidth: 1,
+                                                borderColor: 'rgba(255, 255, 255, 0.15)',
+                                                  shadowColor: "#000",
+                                                    shadowOffset: { width: 0, height: 4 },
+                                                      shadowOpacity: 0.4,
+                                                        shadowRadius: 5,
+                                                          elevation: 8,
+                                                          },
+
+  
+  
   payOption: {
     color: "#fff",
     paddingVertical: 6,
@@ -1887,3 +1963,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff0050",
   },
 });
+function setSocketPosts(arg0: (prev: any) => any[]): void {
+  throw new Error("Function not implemented.");
+}
+

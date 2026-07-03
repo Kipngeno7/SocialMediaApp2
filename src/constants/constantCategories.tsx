@@ -57,7 +57,7 @@ export const CATEGORIES = {
                                                                                                                                     },
 
                                                                                                                                       others: {
-                                                                                                                                          label: "Other",
+                                                                                                                                          label: "Others",
                                                                                                                                               color: "#adb5bd", // ⚪
                                                                                                                                                 },
                                                                                                                                                 };

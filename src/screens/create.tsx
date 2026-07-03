@@ -399,7 +399,19 @@ export default function CreatePostScreen() {
         createdAt: Date.now(),
       };
 
-      await createPost("1", postText.trim(), postText.trim(), "US", undefined);
+            // Get the first uploaded image/video URL if it exists, otherwise fall back to text
+                  const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
+
+                        // Pass the real data into the positional parameters your function expects!
+                              await createPost(
+                                      "1", 
+                                              postText.trim(), 
+                                                      mainMediaUrl, 
+                                                              location || "Unknown Location", 
+                                                                      undefined
+                                                                            );
+                                                                            
+
 
       // Reset fields
       setPostText("");
@@ -432,105 +444,83 @@ export default function CreatePostScreen() {
         <Text style={styles.userName}>{USER.name}</Text>
       </View>
 
-      {/* CATEGORIES + Let's Talk */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {Object.keys(CATEGORIES).map((key) => (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setSelectedCategory(key)}
-              style={{
-                backgroundColor: (CATEGORIES as any)[key].color,
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 6,
-                margin: 4,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 12 }}>{(CATEGORIES as any)[key].label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      
 
-        {/* Let's Talk Icon */}
-        <TouchableOpacity
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 6,
-            backgroundColor: "#4a90e2",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onPress={() => (navigation as any).navigate("LetsTalkCreate")}
-        >
-          <Text style={{ fontSize: 20 }}>🔊</Text>
-        </TouchableOpacity>
-      </View>
-
+      {/* CATEGORY */}
       {/* CATEGORY */}
       <Text style={styles.sectionTitle}>Select Category:</Text>
       <View style={styles.categoriesRow}>
         {Object.keys(CATEGORIES).map((key) => {
-          const isSelected = selectedCategory === key;
+            const isSelected = selectedCategory === key;
 
-          return (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setSelectedCategory(key)}
-              style={{ padding: 2, borderRadius: 20, marginBottom: 8 }}
-            >
-              {/* Rainbow border if selected */}
-              {isSelected && (
-                <Animated.View
-                  style={{
-                    ...StyleSheet.absoluteFill,
-                    borderRadius: 20,
-                    padding: 2,
-                    transform: [
-                      {
-                        rotate: rotation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0deg", "360deg"],
-                        }),
-                      },
-                    ],
-                  }}
-                >
-                  <LinearGradient
-                    colors={[
-                      "#FF0000",
-                      "#FF7F00",
-                      "#FFFF00",
-                      "#00FF00",
-                      "#0000FF",
-                      "#4B0082",
-                      "#8F00FF",
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ flex: 1, borderRadius: 20 }}
-                  />
-                </Animated.View>
-              )}
-              {/* Inner button content */}
-              <View
-                style={{
-                  backgroundColor: (CATEGORIES as any)[key].color,
-                  borderRadius: 18,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#fff", fontSize: 12 }}>
-                  {(CATEGORIES as any)[key].label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                return (
+                      <TouchableOpacity
+                              key={key}
+                                      onPress={() => setSelectedCategory(key)}
+                                              style={{ 
+                                                        padding: isSelected ? 3 : 0, // Outer spacing padding for rainbow border frame width
+                                                                  borderRadius: 20, 
+                                                                            marginBottom: 8, 
+                                                                                      marginHorizontal: 4,
+                                                                                                overflow: 'hidden', // Clips the animated gradient box to a smooth pill path
+                                                                                                          position: 'relative',
+                                                                                                                    alignItems: 'center',
+                                                                                                                              justifyContent: 'center'
+                                                                                                                                      }}
+                                                                                                                                            >
+                                                                                                                                                    {/* Rainbow border animation container if active */}
+                                                                                                                                                            {isSelected && (
+                                                                                                                                                                      <Animated.View
+                                                                                                                                                                                  style={{
+                                                                                                                                                                                                position: 'absolute',
+                                                                                                                                                                                                              width: '200%', // Ensures gradient covers corners safely during rotation
+                                                                                                                                                                                                                            height: '200%',
+                                                                                                                                                                                                                                          transform: [
+                                                                                                                                                                                                                                                          {
+                                                                                                                                                                                                                                                                            rotate: rotation.interpolate({
+                                                                                                                                                                                                                                                                                                inputRange: [0, 1],
+                                                                                                                                                                                                                                                                                                                    outputRange: ["0deg", "360deg"],
+                                                                                                                                                                                                                                                                                                                                      }),
+                                                                                                                                                                                                                                                                                                                                                      },
+                                                                                                                                                                                                                                                                                                                                                                    ],
+                                                                                                                                                                                                                                                                                                                                                                                }}
+                                                                                                                                                                                                                                                                                                                                                                                          >
+                                                                                                                                                                                                                                                                                                                                                                                                      <LinearGradient
+                                                                                                                                                                                                                                                                                                                                                                                                                    colors={[
+                                                                                                                                                                                                                                                                                                                                                                                                                                    "#FF0000",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#FF7F00",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#FFFF00",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#00FF00",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#0000FF",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#4B0082",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    "#8F00FF",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ]}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                start={{ x: 0, y: 0 }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              end={{ x: 1, y: 1 }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            style={{ flex: 1 }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </Animated.View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          )}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          {/* Inner button surface content sits safely on top */}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <View
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            style={{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        backgroundColor: (CATEGORIES as any)[key].color,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    borderRadius: 18,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                paddingHorizontal: 12,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            paddingVertical: 6,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        alignItems: "center",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          >
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: '600' }}>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                {(CATEGORIES as any)[key].label}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </Text>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              })}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </View>
+
 
       {/* Show custom category input if "Others" selected */}
       {selectedCategory === "Other" && (
@@ -619,96 +609,74 @@ export default function CreatePostScreen() {
       
 
       {/* MEDIA + ACTION BUTTON ROW */}
+      {/* MEDIA + ACTION BUTTON ROW */}
       <View style={styles.buttonsRow}>
-        {/* MEDIA BUTTONS */}
-        <View style={styles.mediaColumn}>
-          {/* GO LIVE remains at the top */}
-          <TouchableOpacity onPress={handleGoLive} style={styles.liveButton}>
-            <Text style={styles.buttonText}>🔴 Go Live</Text>
-          </TouchableOpacity>
+        
+          {/* LEFT COLUMN: LISTED MEDIA ACTIONS */}
+            <View style={styles.mediaColumn}>
+                {/* Go Live Button sits cleanly at the top of media list */}
+                    <TouchableOpacity onPress={handleGoLive} style={styles.liveButton}>
+                          <Text style={styles.buttonText}>🔴 Go Live</Text>
+                              </TouchableOpacity>
 
-          {/* + Add Post Button */}
-          <TouchableOpacity
-            onPress={() => setMediaMenuOpen(!mediaMenuOpen)}
-            style={styles.addPostButton}
-          >
-            <Text style={{ color: "#fff", fontSize: 30 }}>+</Text>
-          </TouchableOpacity>
+                                  {/* Exposed Media Selection Links list down vertically */}
+                                      <TouchableOpacity onPress={pickImage} style={styles.expandedButton}>
+                                            <Text style={styles.buttonText}>🖼️ Pick Image</Text>
+                                                </TouchableOpacity>
 
-          <Text style={{ textAlign: "center", color: "#333", marginBottom: 8 }}>Add Post</Text>
+                                                    <TouchableOpacity onPress={pickAudio} style={styles.expandedButton}>
+                                                          <Text style={styles.buttonText}>🎵 Pick Audio</Text>
+                                                              </TouchableOpacity>
 
-          {/* Expanded menu */}
-          {mediaMenuOpen && (
-            <View>
-              <TouchableOpacity
-                onPress={pickImage}
-                style={styles.expandedButton}
-              >
-                <Text style={styles.buttonText}>🖼 Pick Image</Text>
-              </TouchableOpacity>
+                                                                  <TouchableOpacity onPress={pickVideo} style={styles.expandedButton}>
+                                                                        <Text style={styles.buttonText}>🎥 Pick Video</Text>
+                                                                            </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={pickAudio}
-                style={styles.expandedButton}
-              >
-                <Text style={styles.buttonText}>🎵 Pick Audio</Text>
-              </TouchableOpacity>
+                                                                                {!recording ? (
+                                                                                      <TouchableOpacity onPress={startRecording} style={styles.expandedButton}>
+                                                                                              <Text style={styles.buttonText}>🎤 Record Audio</Text>
+                                                                                                    </TouchableOpacity>
+                                                                                                        ) : (
+                                                                                                              <TouchableOpacity onPress={stopRecording} style={styles.expandedButton}>
+                                                                                                                      <Text style={styles.buttonText}>⏹️ Stop Recording</Text>
+                                                                                                                            </TouchableOpacity>
+                                                                                                                                )}
 
-              <TouchableOpacity
-                onPress={pickVideo}
-                style={styles.expandedButton}
-              >
-                <Text style={styles.buttonText}>🎥 Pick Video</Text>
-              </TouchableOpacity>
+                                                                                                                                    {/* UPLOAD PROGRESS TRACKING */}
+                                                                                                                                        {uploading && (
+                                                                                                                                              <View style={{ width: 160, marginTop: 10 }}>
+                                                                                                                                                      <View style={styles.progressBarContainer}>
+                                                                                                                                                                <View
+                                                                                                                                                                            style={[
+                                                                                                                                                                                          styles.progressBar,
+                                                                                                                                                                                                        { width: `${uploadProgress}%` as any },
+                                                                                                                                                                                                                    ]}
+                                                                                                                                                                                                                              />
+                                                                                                                                                                                                                                      </View>
+                                                                                                                                                                                                                                              <Text style={{ textAlign: "right", fontSize: 12, color: "#333" }}>
+                                                                                                                                                                                                                                                        {Math.round(uploadProgress)}%
+                                                                                                                                                                                                                                                                </Text>
+                                                                                                                                                                                                                                                                      </View>
+                                                                                                                                                                                                                                                                          )}
+                                                                                                                                                                                                                                                                            </View>
 
-              {!recording ? (
-                <TouchableOpacity onPress={startRecording} style={styles.expandedButton}>
-                  <Text style={styles.buttonText}>🎤 Record Audio</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={stopRecording} style={styles.expandedButton}>
-                  <Text style={styles.buttonText}>⏹ Stop Recording</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+                                                                                                                                                                                                                                                                              {/* RIGHT COLUMN: ACTION BUTTONS ADJACENT TO RECORD AUDIO */}
+                                                                                                                                                                                                                                                                                <View style={styles.actionColumn}>
+                                                                                                                                                                                                                                                                                    <TouchableOpacity onPress={saveDraft} style={styles.submitButton}>
+                                                                                                                                                                                                                                                                                          <Text style={styles.submitText}>Save Draft</Text>
+                                                                                                                                                                                                                                                                                              </TouchableOpacity>
 
-          {/* REAL UPLOAD PROGRESS BAR */}
-          {uploading && (
-            <View style={{ marginTop: 10 }}>
-              <View style={styles.progressBarContainer}>
-                <View
-                  style={[
-                    styles.progressBar,
-                    { width: `${uploadProgress}%` as any },
-                  ]}
-                />
-              </View>
-              <Text style={{ textAlign: "right", fontSize: 12 }}>
-                {Math.round(uploadProgress)}%
-              </Text>
-            </View>
-          )}
-        </View>
+                                                                                                                                                                                                                                                                                                  <TouchableOpacity onPress={() => setPreviewVisible(true)} style={styles.submitButton}>
+                                                                                                                                                                                                                                                                                                        <Text style={styles.submitText}>Preview</Text>
+                                                                                                                                                                                                                                                                                                            </TouchableOpacity>
 
-        {/* ACTION BUTTONS */}
-        <View style={styles.actionColumn}>
-          <TouchableOpacity onPress={saveDraft} style={styles.submitButton}>
-            <Text style={styles.submitText}>Save Draft</Text>
-          </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                <TouchableOpacity onPress={submitPost} style={styles.submitButtonBlue}>
+                                                                                                                                                                                                                                                                                                                      <Text style={styles.submitTextBlue}>Submit Post</Text>
+                                                                                                                                                                                                                                                                                                                          </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                            </View>
 
-          <TouchableOpacity
-            onPress={() => setPreviewVisible(true)}
-            style={styles.submitButton}
-          >
-            <Text style={styles.submitText}>Preview</Text>
-          </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                            </View>
 
-          <TouchableOpacity onPress={submitPost} style={styles.submitButtonBlue}>
-            <Text style={styles.submitTextBlue}>Submit Post</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {/* VISIBILITY */}
       <Text style={styles.sectionTitle}>Visibility</Text>
@@ -792,20 +760,28 @@ const styles = StyleSheet.create({
   },
 
   buttonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+        flexDirection: "row",
+            justifyContent: "space-between",
+                alignItems: "flex-end", // Keeps right action options anchored cleanly near Record Audio baseline
+                    marginVertical: 12,
+                      },
+  
+  
 
   mediaColumn: {
-    alignItems: "flex-start",
-    marginVertical: 10,
-  },
+        flexDirection: "column",
+            alignItems: "flex-start",
+              },
+  
   actionColumn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    marginVertical: 10,
-  },
+        flexDirection: "row", // Lines your action choices up horizontally side-by-side
+            alignItems: "center",
+                justifyContent: "flex-end",
+                    flex: 1, // Expands column box smoothly to leverage remaining container space
+                        paddingBottom: 5, // Tiny alignment balance adjustment tweak
+                          },
+
+  
 
   button: {
     backgroundColor: "#4a90e2",
@@ -829,24 +805,28 @@ const styles = StyleSheet.create({
   },
 
   submitButton: {
-    backgroundColor: "#06d6a0",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-    alignItems: "center",
-  },
+        backgroundColor: "#06d6a0",
+            paddingVertical: 10,
+                paddingHorizontal: 8,
+                    borderRadius: 6,
+                        marginLeft: 6,
+                            alignItems: "center",
+                                minWidth: 65, // Balances text content sizing constraints safely
+                                  },
+  
 
   submitButtonBlue: {
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#003366",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-    alignItems: "center",
-  },
+        backgroundColor: "#fff",
+            borderWidth: 2,
+                borderColor: "#003366",
+                    paddingVertical: 8, // Factoring in the 2px line border boundary thickness balance
+                        paddingHorizontal: 8,
+                            borderRadius: 6,
+                                marginLeft: 6,
+                                    alignItems: "center",
+                                        minWidth: 85,
+                                          },
+  
 
   submitText: {
     color: "#fff",

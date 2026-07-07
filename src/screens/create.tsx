@@ -78,7 +78,9 @@ const CATEGORY_EMOJI: Record<string, string> = {
   "Personal/Warm Touch": "💛",
   "Public Information": "🟦",
   Sociocultural: "🎭",
-  Other: "⚪",
+   "Breaking News": "📰",
+     Love: "❤️",
+  Others: "⚪",
 };
 
 const USER = {
@@ -88,6 +90,7 @@ const USER = {
 
 export default function CreatePostScreen() {
   const navigation = useNavigation();
+  const { setPosts } = usePosts() as any; // Extractor
 
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
 
@@ -171,8 +174,8 @@ export default function CreatePostScreen() {
 
   // Pick IMAGE
   const pickImage = async () => {
-    if (imageUris.length >= 10) {
-      Alert.alert("You can upload a maximum of 10 images.");
+    if (imageUris.length >= 15) {
+      Alert.alert("You can upload a maximum of 15 images.");
       return;
     }
 
@@ -181,13 +184,13 @@ export default function CreatePostScreen() {
 
     
       allowsMultipleSelection: true,
-      selectionLimit: 10 - imageUris.length,
+      selectionLimit: 15 - imageUris.length,
       quality: 1,
     });
 
     if (!result.canceled) {
       const selectedImages = result.assets.map(asset => asset.uri);
-      const updatedImages = [...imageUris, ...selectedImages].slice(0, 10);
+      const updatedImages = [...imageUris, ...selectedImages].slice(0, 15);
       setImageUris(updatedImages);
     }
   };
@@ -339,6 +342,24 @@ export default function CreatePostScreen() {
       Alert.alert("Please select category");
       return;
     }
+     if (selectedCategory && selectedCategory.toLowerCase().includes("other")) {
+        if (!customCategory.trim()) {
+            Alert.alert("Missing Category", "Please type the title for your custom category.");
+                return;
+                  }
+                    
+                   // Safety check: Formats the string to true Title Case before database storage
+                        const formattedCategory = customCategory
+                            .trim()
+                                .split(' ')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ');
+                                            
+                                              setCustomCategory(formattedCategory);
+                                              }
+      
+
+        
     if (
       !postText.trim() &&
       imageUris.length === 0 &&
@@ -384,9 +405,9 @@ export default function CreatePostScreen() {
           avatar: USER.avatar,
         },
         text: postText.trim(),
-        category: selectedCategory || "Other",
+        category: selectedCategory || "Others",
         otherCategoryText:
-          selectedCategory === "Other" ? customCategory : "",
+          selectedCategory === "Others" ? customCategory : "",
 
         mediaUris: [...uploadedImages, ...uploadedVideos],
         audioUris: uploadedAudios,
@@ -400,16 +421,36 @@ export default function CreatePostScreen() {
       };
 
             // Get the first uploaded image/video URL if it exists, otherwise fall back to text
-                  const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
+              // 1. Pass the complete modern payload to your database service function
+                    const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
 
-                        // Pass the real data into the positional parameters your function expects!
-                              await createPost(
-                                      "1", 
-                                              postText.trim(), 
-                                                      mainMediaUrl, 
-                                                              location || "Unknown Location", 
-                                                                      undefined
-                                                                            );
+
+                    // Pass your values in the exact positional sequence your service expects
+                    await createPost(
+                      "1", 
+                        postText.trim(), 
+                          mainMediaUrl, 
+                            location || "Unknown Location", 
+                              selectedCategory === "Others" ? customCategory : (selectedCategory || "Others")
+                              );
+
+
+                          // 2. Prepend the fresh post into your active client-side UI feed layout state immediately
+                                if (setPosts) {
+                                        setPosts((prevPosts: any) => [newPost, ...prevPosts]);
+                                              } else if ((usePosts() as any).addPost) {
+                                                      // Fallback safety layer in case your specific context uses an addPost utility
+                                                              (usePosts() as any).addPost(newPost);
+                                                                    }
+
+                                                                          // 3. Automatically route the user back to the feed to see their new post render live
+                                                                                if (navigation.canGoBack()) {
+                                                                                        navigation.goBack();
+                                                                                              } else {
+                                                                                                      (navigation.navigate as any)("Feed");
+
+                                                                                                            }
+
                                                                             
 
 
@@ -520,22 +561,29 @@ export default function CreatePostScreen() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             );
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               })}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               </View>
+      {/* Show custom category input if any variant of Other is selected */}
+      {selectedCategory && selectedCategory.toLowerCase().includes("other") && (
+        <View style={{ marginVertical: 8 }}>
+            <Text style={[styles.sectionTitle, { color: '#ef476f', fontSize: 13, marginBottom: 4 }]}>
+                  ⚠️ Please type the title of your custom category:
+                      </Text>
+                          <TextInput
+                           placeholder="Type your category title here... (e.g., Maucori Story)"
+                                 placeholderTextColor="#888"
+                                       value={customCategory}
+                                             onChangeText={setCustomCategory}
+                                                   autoCapitalize="words" // Automatically capitalizes the first letter of each word
+                                                         style={[styles.input, { borderColor: '#ef476f', backgroundColor: '#fff5f5' }]}
+                                                             />     
+                                                              </View>
+                                                              )}
+                                                              
 
-
-      {/* Show custom category input if "Others" selected */}
-      {selectedCategory === "Other" && (
-        <TextInput
-          placeholder="Specify category"
-          value={customCategory}
-          onChangeText={setCustomCategory}
-          style={styles.input}
-        />
-      )}
 
       {/* POST TEXT */}
       <TextInput
         style={styles.textInput}
-        placeholder="What's happening?"
+        placeholder="Add post"
         multiline
         value={postText}
         onChangeText={setPostText}

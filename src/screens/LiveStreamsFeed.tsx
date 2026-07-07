@@ -19,6 +19,8 @@ const CATEGORY_EMOJI: Record<string, string> = {
                   "Personal/Warm Touch": "💛",
                     "Public Information": "🔷",
                     "Sociocultural": "🎭",
+                    "Breaking News": "📰",
+                    "Love": "❤️",
                       Other: "⚪",
                         Gaming: "🎮",
                         };

@@ -55,6 +55,15 @@ export const CATEGORIES = {
                                                                                                                               label: "Sociocultural",
                                                                                                                                   color: "#c77dff", // 🎭 (chosen color)
                                                                                                                                     },
+                                                                                                                                    "Breaking News": {
+                                                                                                                                          label: "Breaking News 📰",
+                                                                                                                                              color:  "#0056b3", 
+                                                                                                                                                },
+                                                                                                                                                  Love: {
+                                                                                                                                                      label: "Love ❤️",
+                                                                                                                                                          color:  "#e63946", 
+                                                                                                                                                            },
+                                                                                                                                    
 
                                                                                                                                       others: {
                                                                                                                                           label: "Others",

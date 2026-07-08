@@ -36,7 +36,7 @@ const MediaLibrary = Platform.OS !== 'web' ? require('expo-media-library') : nul
 
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { getDatabase, ref, onValue } from 'firebase/database';
+//import { getDatabase, ref, onValue } from 'firebase/database';
 
 import axios from "axios";
 
@@ -1981,7 +1981,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff0050",
   },
 });
-function setSocketPosts(arg0: (prev: any) => any[]): void {
-  throw new Error("Function not implemented.");
-}
+
 

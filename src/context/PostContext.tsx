@@ -10,11 +10,16 @@ export interface Post {
         text: string; // Maps to content in database
           mediaUrl: string | null;
             mediaType: 'image' | 'video' | null;
+            mediaUris: string[];          
+              category: string;             
+                otherCategoryText?: string;   
               likesCount: number;
                 commentsCount: number;
+                sharesCount: number;          
+                  isLive?: boolean;             
                   country: string;
                     rankScore: number; 
-                      createdAt: number; // 🌟 UPDATED: Changed from string to number
+                      createdAt: number; // 🌟 
                         // Local/UI extensions (optional defaults)
                           user?: { name: string; avatar?: string; isVerified?: boolean };
                           }
@@ -50,24 +55,62 @@ export interface Post {
 
                                                                                           if (error) throw error;
 
-                                                                                                if (data) {
-                                                                                                        // Map database fields to application UI structure
-                                                                                                                const mappedPosts: Post[] = data.map((item: any) => ({
-                                                                                                                          id: item.id.toString(),
-                                                                                                                                    userId: item.user_id,
-                                                                                                                                              title: item.title,
-                                                                                                                                                        text: item.content,
-                                                                                                                                                                  mediaUrl: item.media_url,
-                                                                                                                                                                            mediaType: item.media_type,
-                                                                                                                                                                                      likesCount: item.likes_count || 0,
-                                                                                                                                                                                                commentsCount: item.comments_count || 0,
-                                                                                                                                                                                                          country: item.country,
-                                                                                                                                                                                                                    rankScore: item.rank_score || 0,
-                                                                                                                                                                                                                              createdAt: new Date(item.created_at).getTime(), // 🌟 FIXED: Outputs standard numeric timestamp
-                                                                                                                                                                                                                                        user: { name: "User " + item.user_id.slice(0, 4), isVerified: false } // Placeholder until user profiles match
-                                                                                                                                                                                                                                                }));
-                                                                                                                                                                                                                                                        setRankedPosts(mappedPosts);
-                                                                                                                                                                                                                                                              }
+ if (data) {
+    // Map database fields to application UI structure seamlessly
+      const mappedPosts: Post[] = data.map((item: any) => ({
+          // 1. FIXED: Set the post ID to the actual row ID, not the poster's user ID
+              id: String(item.id), 
+                  userId: item.user_id,
+                      title: item.title || "",
+                          text: item.content || "", 
+                              
+                                  // 2. FIXED: Provide the category string fallback so your dynamic filter lists don't crash
+                                      category: item.category || "Others", 
+                                          otherCategoryText: item.other_category_text || "",
+
+                                              // 3. FIXED: Wrap single media strings into a structured array for FeedScreen's isVideo/mediaUris check
+                                                  mediaUris: item.media_url ? [item.media_url] : [], 
+                                                      mediaUrl: item.media_url,
+                                                          mediaType: item.media_type,
+
+                                                              // 4. Counts and metrics matching the feed algorithms
+                                                                  likesCount: item.likes_count || 0,
+                                                                      commentsCount: item.comments_count || 0,
+                                                                          sharesCount: item.shares_count || 0,
+                                                                              country: item.country || "",
+                                                                                  rankScore: item.rank_score || 0, 
+                                                                                      isLive: item.is_live || false,
+                                                                                          createdAt: new Date(item.created_at).getTime(), 
+                                                                                              
+                                                                                                  // Custom fallback author model for user summary strip
+                                                                                                      user: item.user || { 
+                                                                                                            id: item.user_id,
+                                                                                                                  name: "User " + String(item.user_id).slice(0, 4), 
+                                                                                                                        avatar: "https://pravatar.cc",
+                                                                                                                              isVerified: item.is_verified || false 
+                                                                                                                                  } 
+                                                                                                                                    }));
+
+                                                                                                                                      setRankedPosts(mappedPosts);
+                                                                                                                                      }
+
+                                                                                             
+                                                                                                        
+                                                                                                    
+                                                                                                                    
+                                                                                                                                  
+                                                                                                                                      
+                                                                                                                                                      
+                                                                                                                                                      
+                                                                                                                                                              
+                                                                                                                                                                        
+                                                                                                                                                                                            
+                                                                                                                                                                                            
+                                                                                                                                                                                                      
+                                                                                                                                                                                                              
+                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                              
                                                                                                                                                                                                                                                                   } catch (e) {
                                                                                                                                                                                                                                                                         console.error("Failed to fetch posts from Supabase:", e);
                                                                                                                                                                                                                                                                             } finally {

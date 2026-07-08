@@ -34,37 +34,74 @@ import { createPost } from '../services/postService';
 const storage = getStorage(app);
 
 export const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
-  try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    // 1. Guard check: Stop immediately if the file path is empty or invalid
+      if (!uri || typeof uri !== 'string' || uri.trim() === "") {
+          console.log("Upload bypassed: URI path is empty.");
+              return null;
+                }
+                  
+                    try {
+                        // 2. Fetch local asset and convert to a file data blob
+                            const response = await fetch(uri);
+                                if (!response.ok) return null;
+                                    const blob = await response.blob();
 
-    const filename = uri.substring(uri.lastIndexOf("/") + 1);
-    const storageRef = ref(storage, `${folder}/${Date.now()}_${filename}`);
+                                        // 3. Generate a clean unique filename string layout
+                                            const filename = uri.substring(uri.lastIndexOf("/") + 1);
+                                                const filePath = `${folder}/${Date.now()}_${filename}`;
 
-    const uploadTask = uploadBytesResumable(storageRef, blob);
+                                                    // 4. Upload raw file blob data straight into your active 'posts-media' bucket
+                                                        const { data, error } = await supabase.storage
+                                                              .from('posts-media')
+                                                                    .upload(filePath, blob, {
+                                                                            cacheControl: '3600',
+                                                                                    upsert: false,
+                                                                                            contentType: blob.type // Automatically preserves image/video types safely
+                                                                                                  });
 
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        snapshot => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`Upload is ${progress}% done`);
-        },
-        error => {
-          console.error("Upload failed:", error);
-          reject(error);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        }
-      );
-    });
-  } catch (error) {
-    console.error("Error fetching file:", error);
-    return null;
-  }
-};
+                                                                                                      if (error) {
+                                                                                                            console.error("Supabase file write error details:", error.message);
+                                                                                                                  return null;
+                                                                                                                      }
+
+                                                                                                                          // 5. Retrieve and return the public CDN URL to save into your post object
+                                                                                                                              const { data: publicUrlData } = supabase.storage
+                                                                                                                                    .from('posts-media')
+                                                                                                                                          .getPublicUrl(filePath);
+
+                                                                                                                                              return publicUrlData.publicUrl;
+
+                                                                                                                                                } catch (error) {
+                                                                                                                                                    console.log("Safe catch triggered for file storage upload failure:", error);
+                                                                                                                                                        return null; 
+                                                                                                                                                          }
+                                                                                                                                                          };
+
+
+
+                                                      
+                                                                
+                                                                                
+                                                                                        
+                                                                                    
+                                                                                                    
+                                                                                                                
+                                                                                                            
+                                                                                                                            
+                                                                                                                                            
+                                                                                                                                              
+                                                                                                                                                            
+                                                                                                                                                                  
+                                                                                                                                                                        
+                                                                                                                                                                              
+                                                                                                                                                                                            
+                                                                                                                                                                                                    
+                                                                                                                                                                                                  
+                                                                                                                                                                                                            
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                  
+
+
 
 const CATEGORY_EMOJI: Record<string, string> = {
   "Political/Governance": "🔴",
@@ -373,28 +410,38 @@ export default function CreatePostScreen() {
     try {
       setUploading(true);
 
-      // Upload images
-      const uploadedImages: string[] = [];
-      for (const uri of imageUris) {
-        const compressedUri = await compressImage(uri);
-        const url = await uploadFile(compressedUri, "images");
-        if (url) uploadedImages.push(url);
-      }
+           // 1. Safe Image Upload
+                 const uploadedImages: string[] = [];
+                       if (imageUris && imageUris.length > 0) {
+                               for (const uri of imageUris) {
+                                         if (!uri) continue; // Safety skip for invalid paths
+                                                   const compressedUri = await compressImage(uri);
+                                                             const url = await uploadFile(compressedUri, "images");
+                                                                       if (url) uploadedImages.push(url);
+                                                                               }
+                                                                                     }
 
-      // Upload videos
-      const uploadedVideos: string[] = [];
-      for (const uri of videoUris) {
-        const compressedUri = await compressVideo(uri);
-        const url = await uploadFile(compressedUri, "videos");
-        if (url) uploadedVideos.push(url);
-      }
+                                                                                           // 2. Safe Video Upload
+                                                                                                 const uploadedVideos: string[] = [];
+                                                                                                       if (videoUris && videoUris.length > 0) {
+                                                                                                               for (const uri of videoUris) {
+                                                                                                                         if (!uri) continue;
+                                                                                                                                   const compressedUri = await compressVideo(uri);
+                                                                                                                                             const url = await uploadFile(compressedUri, "videos");
+                                                                                                                                                       if (url) uploadedVideos.push(url);
+                                                                                                                                                               }
+                                                                                                                                                                     }
 
-      // Upload audios
-      const uploadedAudios: string[] = [];
-      for (const uri of audioUris) {
-        const url = await uploadFile(uri, "audios");
-        if (url) uploadedAudios.push(url);
-      }
+                                                                                                                                                                           // 3. Safe Audio Upload
+                                                                                                                                                                                 const uploadedAudios: string[] = [];
+                                                                                                                                                                                       if (audioUris && audioUris.length > 0) {
+                                                                                                                                                                                               for (const uri of audioUris) {
+                                                                                                                                                                                                         if (!uri) continue;
+                                                                                                                                                                                                                   const url = await uploadFile(uri, "audios");
+                                                                                                                                                                                                                             if (url) uploadedAudios.push(url);
+                                                                                                                                                                                                                                     }
+                                                                                                                                                                                                                                           }
+
 
       const newPost = {
         id: Date.now().toString(),
@@ -467,10 +514,15 @@ export default function CreatePostScreen() {
       setUploadProgress(0);
 
       Alert.alert("Post submitted!");
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Upload failed");
-    } finally {
+                                                                                                            } catch (error: any) {
+                                                                                                                    console.log("CRASH ERROR DETAILS:", error);
+                                                                                                                          Alert.alert(
+                                                                                                                                  "Submission Failed", 
+                                                                                                                                          error?.message || JSON.stringify(error) || String(error)
+                                                                                                                                                );
+                                                                                                                                                    }
+
+                                                                                                             finally {
       setUploading(false);
     }
   };

@@ -23,15 +23,16 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Video } from 'react-native-compressor';
 import { Ionicons } from "@expo/vector-icons";
 
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { app } from "../firebaseConfig";
+//import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+//import { app } from "../firebaseConfig";
 import {supabase} from '../config/supabase';
+import { auth } from "../firebaseConfig"; 
 import { useNavigation } from "@react-navigation/native";
 
-import { createPost } from '../services/postService';
+//import { createPost } from '../services/postService';
 
 
-const storage = getStorage(app);
+//const storage = getStorage(app);
 
 export const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
     // 1. Guard check: Stop immediately if the file path is empty or invalid
@@ -443,60 +444,81 @@ export default function CreatePostScreen() {
                                                                                                                                                                                                                                            }
 
 
-      const newPost = {
-        id: Date.now().toString(),
-        user: {
-          id: "1",
-          name: "Dennis",
-          isVerified: false,
-          avatar: USER.avatar,
-        },
-        text: postText.trim(),
-        category: selectedCategory || "Others",
-        otherCategoryText:
-          selectedCategory === "Others" ? customCategory : "",
+          // ==========================================
+                // START OF REPLACEMENT PIPELINE
+                      // ==========================================
 
-        mediaUris: [...uploadedImages, ...uploadedVideos],
-        audioUris: uploadedAudios,
+                            // 1. Grab current authenticated Firebase User ID dynamically
+                                  const userId = auth.currentUser?.uid || "1"; 
 
-        hashtags,
-        location,
-        visibility,
-        comments: [],
-        likes: 0,
-        createdAt: Date.now(),
-      };
+                                        // 2. Fetch the first uploaded image/video URL if it exists (PRESERVED LOGIC)
+                                              const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
 
-            // Get the first uploaded image/video URL if it exists, otherwise fall back to text
-              // 1. Pass the complete modern payload to your database service function
-                    const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
+                                                    // 3. Insert data cleanly directly into your Supabase Database table
+                                                          const { data: dbPost, error: supabaseError } = await supabase
+                                                                  .from("posts")
+                                                                          .insert([
+                                                                                    {
+                                                                                                user_id: userId,
+                                                                                                            content: postText.trim(),
+                                                                                                                        category: selectedCategory === "Others" ? customCategory : (selectedCategory || "Others"),
+                                                                                                                                    media_url: mainMediaUrl || null,
+                                                                                                                                                all_media_urls: [...uploadedImages, ...uploadedVideos],
+                                                                                                                                                            audio_urls: uploadedAudios,
+                                                                                                                                                                        hashtags: hashtags || null,
+                                                                                                                                                                                    location: location || "Unknown Location",
+                                                                                                                                                                                                visibility: visibility,
+                                                                                                                                                                                                            likes_count: 0,
+                                                                                                                                                                                                                        comments_count: 0,
+                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                          ])
+                                                                                                                                                                                                                                                  .select()
+                                                                                                                                                                                                                                                          .single();
 
+                                                                                                                                                                                                                                                                if (supabaseError) {
+                                                                                                                                                                                                                                                                        throw new Error(`Supabase Insert Failed: ${supabaseError.message}`);
+                                                                                                                                                                                                                                                                              }
 
-                    // Pass your values in the exact positional sequence your service expects
-                    await createPost(
-                      "1", 
-                        postText.trim(), 
-                          mainMediaUrl, 
-                            location || "Unknown Location", 
-                              selectedCategory === "Others" ? customCategory : (selectedCategory || "Others")
-                              );
+                                                                                                                                                                                                                                                                                    // 4. Assemble the complete modern object payload structure (PRESERVED LOGIC)
+                                                                                                                                                                                                                                                                                          const newPostData = {
+                                                                                                                                                                                                                                                                                                  id: dbPost?.id?.toString() || Date.now().toString(),
+                                                                                                                                                                                                                                                                                                          user: {
+                                                                                                                                                                                                                                                                                                                    id: userId,
+                                                                                                                                                                                                                                                                                                                              name: "Dennis",
+                                                                                                                                                                                                                                                                                                                                        isVerified: false,
+                                                                                                                                                                                                                                                                                                                                                  avatar: USER.avatar,
+                                                                                                                                                                                                                                                                                                                                                          },
+                                                                                                                                                                                                                                                                                                                                                                  text: postText.trim(),
+                                                                                                                                                                                                                                                                                                                                                                          category: selectedCategory || "Others",
+                                                                                                                                                                                                                                                                                                                                                                                  otherCategoryText: selectedCategory === "Others" ? customCategory : "",
+                                                                                                                                                                                                                                                                                                                                                                                          mediaUris: [...uploadedImages, ...uploadedVideos],
+                                                                                                                                                                                                                                                                                                                                                                                                  audioUris: uploadedAudios,
+                                                                                                                                                                                                                                                                                                                                                                                                          hashtags,
+                                                                                                                                                                                                                                                                                                                                                                                                                  location,
+                                                                                                                                                                                                                                                                                                                                                                                                                          visibility,
+                                                                                                                                                                                                                                                                                                                                                                                                                                  comments: [],
+                                                                                                                                                                                                                                                                                                                                                                                                                                          likes: 0,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  createdAt: Date.now(),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        };
 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                              // 5. Prepend fresh post into context UI feed layout state immediately (PRESERVED LOGIC)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if (setPosts) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            setPosts((prevPosts: any) => [newPostData, ...prevPosts]);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  } else if ((usePosts() as any).addPost) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          (usePosts() as any).addPost(newPostData);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
 
-                          // 2. Prepend the fresh post into your active client-side UI feed layout state immediately
-                                if (setPosts) {
-                                        setPosts((prevPosts: any) => [newPost, ...prevPosts]);
-                                              } else if ((usePosts() as any).addPost) {
-                                                      // Fallback safety layer in case your specific context uses an addPost utility
-                                                              (usePosts() as any).addPost(newPost);
-                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      // 6. Automatically route the user back to the feed to see it render live (PRESERVED LOGIC)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if (navigation.canGoBack()) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    navigation.goBack();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          } else {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  (navigation.navigate as any)("Feed");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
 
-                                                                          // 3. Automatically route the user back to the feed to see their new post render live
-                                                                                if (navigation.canGoBack()) {
-                                                                                        navigation.goBack();
-                                                                                              } else {
-                                                                                                      (navigation.navigate as any)("Feed");
-
-                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              // ==========================================
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    // END OF REPLACEMENT PIPELINE
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // ==========================================
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
 
                                                                             
 
@@ -1016,3 +1038,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 });
+function createPost(arg0: string, arg1: string, livePlaceholder: string, location: string, undefined: undefined) {
+  throw new Error("Function not implemented.");
+}
+

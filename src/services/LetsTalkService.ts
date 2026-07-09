@@ -578,44 +578,70 @@ export const addComment = async (
 };
 
 /* ────────REAL-TIME LISTENERS─────── */
+/* ────────REAL-TIME LISTENERS─────── */
 export const subscribeToRoom = (
   roomId: string,
-  onUpdate: (room: LetsTalkRoomRecord) => void,
-  onError?: (err: Error) => void
-): (() => void) => {
-  const ref = doc(db, ROOMS_COLLECTION, roomId);
-  return onSnapshot(
-    ref,
-    (snap) => {
-      if (snap.exists()) {
-        onUpdate({ id: snap.id, ...snap.data() } as LetsTalkRoomRecord);
-      }
-    },
-    (err) => {
-      if (onError) onError(err);
-      else console.error("subscribeToRoom error:", err);
-    }
-  );
-};
+    onUpdate: (room: LetsTalkRoomRecord) => void,
+      onError?: (err: Error) => void
+      ): (() => void) => {
+        const channel = supabase
+            .channel(`room_changes:${roomId}`)
+                .on(
+                      'postgres_changes',
+                            { event: 'UPDATE', schema: 'public', table: 'lets_talk_rooms', filter: `id=eq.${roomId}` },
+                                  (payload) => {
+                                          onUpdate({ id: roomId, ...payload.new } as LetsTalkRoomRecord);
+                                                }
+                                                    )
+                                                        .subscribe((status) => {
+                                                              if (status === 'CHANNEL_ERROR' && onError) {
+                                                                      onError(new Error("Supabase room subscription failed"));
+                                                                            }
+                                                                                });
 
-export const subscribeToMembers = (
-  roomId: string,
-  onUpdate: (members: Member[]) => void,
-  onError?: (err: Error) => void
-): (() => void) => {
-  const q = query(
-    collection(db, ROOMS_COLLECTION, roomId, "members"),
-    orderBy("joinedAt")
-  );
-  return onSnapshot(
-    q,
-    (snap) => {
-      const members = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Member));
-      onUpdate(members);
-    },
-    (err) => {
-      if (onError) onError(err);
-      else console.error("subscribeToMembers error:", err);
-    }
-  );
-};
+                                                                                  return () => {
+                                                                                      supabase.removeChannel(channel);
+                                                                                        };
+                                                                                        };
+
+                                                                                        export const subscribeToMembers = (
+                                                                                          roomId: string,
+                                                                                            onUpdate: (members: Member[]) => void,
+                                                                                              onError?: (err: Error) => void
+                                                                                              ): (() => void) => {
+                                                                                                const channel = supabase
+                                                                                                    .channel(`room_members:${roomId}`)
+                                                                                                        .on(
+                                                                                                              'postgres_changes',
+                                                                                                                    { event: '*', schema: 'public', table: 'lets_talk_members', filter: `room_id=eq.${roomId}` },
+                                                                                                                          async () => {
+                                                                                                                                  const { data, error } = await supabase
+                                                                                                                                            .from('lets_talk_members')
+                                                                                                                                                      .select('*')
+                                                                                                                                                                .eq('room_id', roomId);
+
+                                                                                                                                                                        if (!error && data) {
+                                                                                                                                                                                  const mappedMembers: Member[] = data.map((m) => ({
+                                                                                                                                                                                              id: m.id,
+                                                                                                                                                                                                          userId: m.user_id,
+                                                                                                                                                                                                                      username: m.username,
+                                                                                                                                                                                                                                  profilePicture: m.profile_picture,
+                                                                                                                                                                                                                                              isVIP: m.is_vip,
+                                                                                                                                                                                                                                                          isSpeaking: m.is_speaking,
+                                                                                                                                                                                                                                                                      hasMic: m.has_mic,
+                                                                                                                                                                                                                                                                                  requestedToSpeak: m.requested_to_speak,
+                                                                                                                                                                                                                                                                                              joinedAt: m.joined_at,
+                                                                                                                                                                                                                                                                                                        }));
+                                                                                                                                                                                                                                                                                                                  onUpdate(mappedMembers);
+                                                                                                                                                                                                                                                                                                                          } else if (error && onError) {
+                                                                                                                                                                                                                                                                                                                                    onError(new Error(error.message));
+                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                                                                                                      )
+                                                                                                                                                                                                                                                                                                                                                          .subscribe();
+
+                                                                                                                                                                                                                                                                                                                                                            return () => {
+                                                                                                                                                                                                                                                                                                                                                                supabase.removeChannel(channel);
+                                                                                                                                                                                                                                                                                                                                                                  };
+                                                                                                                                                                                                                                                                                                                                                                  };
+                                                                                                                                                                                                                                                                                                                                                                  

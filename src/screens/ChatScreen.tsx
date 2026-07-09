@@ -22,7 +22,7 @@ import { auth, db } from '../firebaseConfig';
 import {supabase} from '../config/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import { doc, collection, updateDoc, onSnapshot, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
+//import { doc, collection, updateDoc, onSnapshot, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next'; // <-- i18next import
 
@@ -53,34 +53,89 @@ export default function ChatScreen({ route }: ChatScreenProps) {
       setChatId(id);
 
       // Pagination - first 20 messages
-      const q = query(
-        collection(db, 'chats', id, 'messages'),
-        orderBy('timestamp', 'desc'),
-        limit(20)
-      );
-      const snap = await getDocs(q);
-      setLastVisible(snap.docs[snap.docs.length - 1]);
-      setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+          const { data, error } = await supabase
+                  .from('messages')
+                          .select('*')
+                                  .eq('chat_id', id)
+                                          .order('timestamp', { ascending: false })
+                                                  .range(0, 19);
+
+                                                        if (!error && data) {
+                                                                setMessages(data);
+                                                                      }
 
       // Subscribe to real-time updates
-      subscribeToChat(id, (msgs) => setMessages(msgs));
-    };
+      //subscribeToChat(id, (msgs) => setMessages(msgs));
+      const channel = supabase
+        .channel(`realtime_messages:${id}`)
+          .on(
+              'postgres_changes',
+                  { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${id}` },
+                      (payload) => {
+                            // Append the new message to the top of your list instantly
+                                  setMessages((prev) => [payload.new, ...prev]);
+                                      }
+                                        )
+                                          .subscribe();
+
+                                          // Return the channel cleanup tracker to the component layer
+                                          return () => {
+                                            supabase.removeChannel(channel);
+                                            };
+
+                                          };
     initChat();
   }, [currentUserId, otherUserId]);
 
   // Typing indicator subscription
-  useEffect(() => {
-    if (!chatId || !currentUserId) return;
-    const typingRef = collection(db, 'chats', chatId, 'typing');
-    const unsubscribe = onSnapshot(typingRef, (snapshot) => {
-      const usersTyping: string[] = [];
-      snapshot.docs.forEach((doc) => {
-        if (doc.id !== currentUserId && doc.data().typing) usersTyping.push(doc.id);
-      });
-      setTypingUsers(usersTyping);
-    });
-    return unsubscribe;
-  }, [chatId]);
+    useEffect(() => {
+          if (!chatId || !currentUserId) return;
+
+              const typingChannel = supabase.channel(`typing:${chatId}`, {
+                    config: { presence: { key: currentUserId } },
+                        });
+
+                            typingChannel
+                                  .on('presence', { event: 'sync' }, () => {
+                                          const state = typingChannel.presenceState();
+                                                  const usersTyping: string[] = [];
+
+                                                          Object.keys(state).forEach((userId) => {
+                                                                    if (userId !== currentUserId) {
+                                                                                const userPresenceArray = state[userId] as any[];
+                                                                                            const userPresence = userPresenceArray?.[0];
+                                                                                                        if (userPresence?.isTyping) {
+                                                                                                                      usersTyping.push(userId);
+                                                                                                                                  }
+                                                                                                                                            }
+                                                                                                                                                    });
+                                                                                                                                                            setTypingUsers(usersTyping);
+                                                                                                                                                                  })
+                                                                                                                                                                        .subscribe();
+
+                                                                                                                                                                            return () => {
+                                                                                                                                                                                  typingChannel.untrack();
+                                                                                                                                                                                        supabase.removeChannel(typingChannel);
+                                                                                                                                                                                            };
+                                                                                                                                                                                              }, [chatId]);
+
+    
+                      
+                
+                        
+                                                        
+                                              
+                                                                
+                                                                                  
+                                                                          
+                                                                                      
+                                                                                      
+                                                                                      
+
+            
+                                                                
+                          
+              
 
   const handleSend = async () => {
     if (!text.trim()) return;
@@ -96,8 +151,8 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         
     
     // Update typing status
-    const typingRef = doc(db, 'chats', chatId, 'typing', currentUserId!);
-    await updateDoc(typingRef, { typing: false });
+  supabase.channel(`typing:${chatId}`).track({ isTyping: false });
+
   };
 
   
@@ -213,19 +268,18 @@ const playAudio = async (uri: string) => {
 
   // Pagination
   const fetchMoreMessages = async () => {
-    if (!lastVisible) return;
-    const q = query(
-      collection(db, 'chats', chatId, 'messages'),
-      orderBy('timestamp', 'desc'),
-      startAfter(lastVisible),
-      limit(20)
-    );
-    const snap = await getDocs(q);
-    setLastVisible(snap.docs[snap.docs.length - 1]);
-    setMessages((prev) => [
-      ...prev,
-      ...snap.docs.map((d) => ({ id: d.id, ...d.data() })),
-    ]);
+        const currentOffset = messages.length;
+            const { data, error } = await supabase
+                  .from('messages')
+                        .select('*')
+                              .eq('chat_id', chatId)
+                                    .order('timestamp', { ascending: false })
+                                          .range(currentOffset, currentOffset + 19);
+
+                                              if (!error && data) {
+                                                    setMessages((prev) => [...prev, ...data]);
+                                                        }
+                                                        
   };
 
   return (
@@ -284,11 +338,14 @@ const playAudio = async (uri: string) => {
         <TextInput
           placeholder={t('type_message')}
           value={text}
-          onChangeText={async (tVal) => {
+          onChangeText={(tVal) => {
+
+          
             setText(tVal);
             if (chatId && currentUserId) {
-              const typingRef = doc(db, 'chats', chatId, 'typing', currentUserId);
-              await updateDoc(typingRef, { typing: tVal.length > 0 });
+              const channel = supabase.channel(`typing:${chatId}`);
+              channel.track({ isTyping: tVal.length > 0 });
+
             }
           }}
           style={styles.input}

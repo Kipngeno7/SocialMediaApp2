@@ -1,13 +1,11 @@
 // App.tsx
-import './src/firebaseConfig';
-import React from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-url-polyfill/auto';
-import  { useEffect } from 'react';
 import { Text, ScrollView, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 
 import './src/i18n/i18n';
-import { auth } from './src/firebaseConfig';
+import { supabase } from './src/config/supabase'; // Updated to point to Supabase Client
 import AppNavigator from './src/navigation/AppNavigator';
 import { registerForPushNotifications } from './src/services/pushService';
 
@@ -54,27 +52,62 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, State
                                                                                                                                             export default function App() {
                                                                                                                                               useEffect(() => {
                                                                                                                                                   const registerPush = async () => {
-                                                                                                                                                        if (auth.currentUser) {
-                                                                                                                                                                await registerForPushNotifications();
-                                                                                                                                                                      } else {
-                                                                                                                                                                              const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                                                                                                                                                                                        if (user) {
-                                                                                                                                                                                                    await registerForPushNotifications();
-                                                                                                                                                                                                                unsubscribe();
-                                                                                                                                                                                                                          }
-                                                                                                                                                                                                                                  });
-                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                            };
+                                                                                                                                                        // 1. Check if a user session already exists in Supabase
+                                                                                                                                                              const { data: { session } } = await supabase.auth.getSession();
+                                                                                                                                                                    
+                                                                                                                                                                          if (session?.user) {
+                                                                                                                                                                                  await registerForPushNotifications();
+                                                                                                                                                                                        } else {
+                                                                                                                                                                                                // 2. Otherwise, set up an active auth state change listener for Supabase
+                                                                                                                                                                                                        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+                                                                                                                                                                                                                  if (currentSession?.user) {
+                                                                                                                                                                                                                              await registerForPushNotifications();
+                                                                                                                                                                                                                                          subscription.unsubscribe(); // Stop listening once registration succeeds
+                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                            });
+                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                      };
 
-                                                                                                                                                                                                                                                registerPush();
-                                                                                                                                                                                                                                                  }, []);
+                                                                                                                                                                                                                                                                          registerPush();
+                                                                                                                                                                                                                                                                            }, []);
 
-                                                                                                                                                                                                                                                    return (
-                                                                                                                                                                                                                                                        <ErrorBoundary>
-                                                                                                                                                                                                                                                              <NavigationContainer>
-                                                                                                                                                                                                                                                                      <AppNavigator />
-                                                                                                                                                                                                                                                                            </NavigationContainer>
-                                                                                                                                                                                                                                                                                </ErrorBoundary>
-                                                                                                                                                                                                                                                                                  );
-                                                                                                                                                                                                                                                                                  }
-                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                              return (
+                                                                                                                                                                                                                                                                                  <ErrorBoundary>
+                                                                                                                                                                                                                                                                                        <NavigationContainer>
+                                                                                                                                                                                                                                                                                                <AppNavigator />
+                                                                                                                                                                                                                                                                                                      </NavigationContainer>
+                                                                                                                                                                                                                                                                                                          </ErrorBoundary>
+                                                                                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                            
+                                
+
+                            
+                        
+                                    
+                                        
+                                                    
+                                                                        
+                                                                    
+                                                                                                                                          
+                                                                                                                                              
+                                                                                                                                                    
+                                                                                                                                                                
+                                                                                                                                                                  
+                                                                                                                                                                              
+                                                                                                                                                                                        
+                                                                                                                                                                                                  
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                  
+                                                                                                                                                                                                              
+
+                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                  
+
+                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                        

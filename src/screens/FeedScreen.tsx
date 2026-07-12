@@ -70,31 +70,55 @@ const ITEM_HEIGHT = height;
 const REACTIONS = ["❤️", "🥺", "😎", "🔥", "👍", "👏", "😌", "😭", "😆", "🥱"];
 const CATEGORY_EMOJI: Record<string, string> = {
   "Political/Governance": "🔴",
-  Sports: "🟠",
-  Health: "🟢",
+  "Sports": "🟠",
+  "Health": "🟢",
   "Educational/Philosophical": "🔵",
-  Entertainment: "🌸",
-  Technological: "🟣",
-  Religious: "🕊️",
+  "Entertainment": "🌸",
+  "Technological": "🟣",
+  "Religious": "🕊️",
   "Development/Economic": "🟤",
   "Personal/Warm Touch": "💛",
   "Public Information": "🟦",
-  Sociocultural: "🎭",
+  "Sociocultural": "🎭",
     "Breaking News": "📰",
-      Love : "❤️",
+      "Love" : "❤️",
 
-  Others: "⚪",
+  "Others": "⚪",
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 const renderCategoryBadge = (post: any): string => {
-  if (post.category === "Other" && post.otherCategoryText) {
-    return `${post.otherCategoryText} Post ${CATEGORY_EMOJI["Other"]}`;
-  }
-  const emoji = CATEGORY_EMOJI[post.category] || "⚪";
-  return `${post.category} Post ${emoji}`;
-};
+    if (!post) return "General Post ⚪";
+
+      // 1. Check if it is a custom category from the 'Others' selection box
+        if (post.category === "Other" && post.otherCategoryText) {
+            const customText = post.otherCategoryText.trim();
+                
+                    // Capitalize first letters of each word cleanly
+                        const capitalizedCustom = customText
+                              .split(" ")
+                                    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                          .join(" ");
+
+                                              return `${capitalizedCustom} Post ⚪`;
+                                                }
+
+                                                  // 2. Default category handler logic block
+                                                    const normalCategory = post.category || "Others";
+                                                      const capitalizedNormal = normalCategory
+                                                          .split(" ")
+                                                              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                                                  .join(" ");
+
+                                                                    const emoji = CATEGORY_EMOJI[capitalizedNormal] || CATEGORY_EMOJI[normalCategory] || "⚪";
+                                                                      return `${capitalizedNormal} Post ${emoji}`;
+                                                                      };
+
+
+                                                    
+
+
 
 const verifiedBoost = (post: any): number => {
   return post.user?.isVerified ? 10 : 0;
@@ -373,7 +397,10 @@ const CommentItem = ({
             )}
           </View>
 
-          <Text style={styles.commentText}>{comment.text}</Text>
+          <Text style={[styles.commentText, { color: "#ffffff", fontSize: 13, fontWeight: "normal", opacity: 1 }]}>
+              {comment && comment.text ? comment.text : ""}
+              </Text>
+              
 
           {/* Actions */}
           <View style={{ flexDirection: "row", marginTop: 4 }}>
@@ -492,9 +519,12 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   // ── Effects ──────────────────────────────────────────────────────────────────
 
   // Request media library permissions on mount
+  // Request media library permissions on mount safely
   useEffect(() => {
     (async () => {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (!MediaLibrary) return; // Exit if on web or null
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+
       if (status !== "granted") {
         Alert.alert(
           "Permission required",
@@ -697,22 +727,24 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   };
 const handleSendReply = () => {
     if (!replyText.trim()) return;
-    const newComment = {
-      id: Date.now().toString(),
-      text: replyText,
-      user: {
-        name: "You",
-        avatar: "https://i.pravatar.cc/100",
-        isVerified: true,
-      },
-      likes: 0,
-      liked: false,
-      isPinned: false,
-      replies: [],
-    };
-    setComments((prev: any[]) => [...prev, newComment]);
-    setReplyText("");
-  };
+      const newComment = {
+          id: Date.now().toString(),
+              text: replyText, // Explicitly binds the typed text words here
+                  user: {
+                        name: "You",
+                              avatar: "https://pravatar.cc",
+                                    isVerified: true,
+                                        },
+                                            likes: 0,
+                                                liked: false,
+                                                    isPinned: false,
+                                                        replies: [],
+                                                          };
+                                                            setComments((prev: any[]) => [...prev, newComment]);
+                                                              setReplyText(""); // Clears field box input text
+                                                              };
+
+
 
   const handleWatchTime = (postId: string, seconds: number) => {
     onWatchTime?.(postId, seconds);
@@ -744,12 +776,15 @@ const handleSendReply = () => {
             flexWrap: "wrap",
           }}
         >
-          <Text style={{ fontWeight: "bold", fontSize: 14, color: "#000" }}>
-            {item.user?.name ?? "Unknown"}
-          </Text>
-          <Text style={{ fontSize: 14, marginLeft: 4, color: "#000" }}>
-            has posted:{" "}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
+              <Text style={{ fontWeight: "bold", fontSize: 14, color: "#000" }}>
+                  {item.user?.name ?? "Unknown"}:{" "}
+                    </Text>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#333" }}>
+                          {renderCategoryBadge(item)}
+                            </Text>
+                            </View>
+
 
           {/* Category badge */}
           <View
@@ -791,10 +826,13 @@ const handleSendReply = () => {
             />
           )}
 
-          {/* Post text */}
-          {!editing && (
-            <Text style={styles.postText}>{item?.text}</Text>
-          )}
+        {/* Post text words with high contrast display visibility rule */}
+        {!editing && (
+          <Text style={[styles.postText, { color: '#000', fontSize: 16, fontWeight: '500', paddingHorizontal: 15, marginVertical: 8 }]}>
+              {item?.text}
+                </Text>
+                )}
+
 
           {/* Edit mode */}
           {editing && (
@@ -869,38 +907,26 @@ const handleSendReply = () => {
         {/* Like */}
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => {
-            if (!liked) {
-              setLiked(true);
-              setLikesCount((prev: number) => prev + 1);
-            }
-            heartAnim.setValue(0);
-            Animated.sequence([
-              Animated.timing(heartAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-              Animated.timing(heartAnim, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-            ]).start();
-          }}
-        >
-          <Text style={styles.iconText}>❤️</Text>
-          <Text style={styles.countText}>{likesCount}</Text>
-        </TouchableOpacity>
+            onPress={() => {
+                setLiked(!liked);
+                    setLikesCount(prev => liked ? prev - 1 : prev + 1);
+                        handleReact(item.id, "❤️");
+                          }}
+                          >
+                            <Text style={styles.iconText}>{liked ? "❤️" : "🤍"}</Text>
+                              <Text style={[styles.countText, { color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowRadius: 2 }]}>{likesCount}</Text>
+                              </TouchableOpacity>
 
-        {/* Comment toggle */}
-        <TouchableOpacity
-          style={styles.iconButton}
+
+      {/* Comment toggle */}
+      <TouchableOpacity
+        style={styles.iconButton}
           onPress={() => setCommentsVisible((prev) => !prev)}
-        >
-          <Text style={styles.iconText}>💬</Text>
-          <Text style={styles.countText}>{comments.length}</Text>
-        </TouchableOpacity>
+          >
+            <Text style={styles.iconText}>💬</Text>
+              <Text style={[styles.countText, { color: '#000', fontWeight: 'bold' }]}>{comments.length}</Text>
+              </TouchableOpacity>
+
 
         {/* Share */}
         <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
@@ -919,12 +945,19 @@ const handleSendReply = () => {
         {/* Unified Expandable Support Button & Menu */}
                 <View style={{ alignItems: "center", position: "relative" }}>
                           <TouchableOpacity
-                                      style={styles.iconButton}
-                                                  onPress={() => setPayMenuVisible((prev) => !prev)}
-                                                            >
-                                                                        <Text style={styles.iconText}>💰</Text>
-                                                                                    <Text style={styles.countText}>Support</Text>
-                                                                                              </TouchableOpacity>
+                            style={[styles.iconButton, { minHeight: 50, justifyContent: 'center' }]}
+                              onPress={() => setPayMenuVisible((prev) => !prev)}
+                              >
+                                <Text style={styles.iconText}>💰</Text>
+                                  <Text style={[styles.countText, { textAlign: 'center', width: 60 }]}>Support</Text>
+                                  </TouchableOpacity>
+
+                                
+                                                
+                                                            
+                                                                    
+                                                                                    
+                                                                                      
 
                                                                                                         {payMenuVisible && (
                                                                                                                     <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
@@ -998,20 +1031,7 @@ const handleSendReply = () => {
                                                                                                                                                                                     
 
 
-        {/* Subscribe */}
-        <TouchableOpacity style={styles.iconButton} onPress={handleSubscribe}>
-          <Text style={styles.iconText}>⭐</Text>
-          <Text style={styles.countText}>
-            {isSubscribed ? "Subscribed" : "Subscribe"}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Go Live */}
-        <TouchableOpacity style={styles.goLiveButton} onPress={handleGoLive}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            {item?.isLive ? "🔴 Stop Live" : "Go Live"}
-          </Text>
-        </TouchableOpacity>
+        
       </View>
 
       {/* Bottom info overlay */}
@@ -1147,9 +1167,10 @@ const handleSendReply = () => {
 
 // ─── FeedScreen ────────────────────────────────────────────────────────────────
 export default function FeedScreen() {
+  
   const [posts, setPosts] = useState<any[]>([]);
   const { rankedPosts = [], editPost, isLoading, fetchPosts } = usePosts();
-  
+
 
 
 
@@ -1202,7 +1223,8 @@ export default function FeedScreen() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       },
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   text: post.content,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               category: post.category || "Others",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          mediaUris: post.all_media_urls || (post.media_url ? [post.media_url] : []),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     mediaUris: post.mediaUrl ? [post.mediaUrl] : (post.media_url ? [post.media_url] : []),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       audioUris: post.audio_urls || [],
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   hashtags: post.hashtags || "",
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               location: post.location || "Unknown Location",
@@ -1452,11 +1474,26 @@ export default function FeedScreen() {
       finalScore: calculateFinalScore(post),
     }));
 
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter((post) =>
-        selectedCategories.includes(post.category)
-      );
-    }
+    if (selectedCategories && selectedCategories.length > 0) {
+        filtered = filtered.filter((post) => {
+            if (!post || !post.category) return false;
+
+                // If "Others" is toggled, we must also match posts with custom written titles
+                    const includesOthers = selectedCategories.includes("Others") || selectedCategories.includes("Other");
+                        if (includesOthers && post.category === "Other") {
+                              return true;
+                                  }
+
+                                      // Check if the current post category name exists inside our selected array tracker
+                                          return selectedCategories.some(cat => 
+                                                cat.toLowerCase().trim() === post.category.toLowerCase().trim()
+                                                    );
+                                                      });
+                                                      }
+
+    
+
+    
 
     return filtered.sort((a, b) => {
       const rankA = a.rankScore || 0;
@@ -1674,47 +1711,7 @@ export default function FeedScreen() {
 
 
       {/* ── User posts summary strip ──────────────────────────────────────────── */}
-      <FlatList
-        horizontal
-        data={Object.values(postsByUser)}
-        keyExtractor={(userPosts: any[]) =>
-          userPosts[0].user?.id || userPosts[0].user?.name
-        }
-        renderItem={({ item: userPosts }) => {
-          const user = userPosts[0].user;
-          return (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginVertical: 8,
-                marginRight: 12,
-              }}
-            >
-              <Image
-                source={{
-                  uri: user?.avatar || "https://i.pravatar.cc/100",
-                }}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  marginRight: 8,
-                }}
-              />
-              <Text style={{ color: "#000", flexShrink: 1 }}>
-                {user?.name}:{" "}
-                {userPosts.map((post: any, idx: number) => (
-                  <Text key={post.id}>
-                    {renderCategoryBadge(post)}
-                    {idx < userPosts.length - 1 ? ", " : ""}
-                  </Text>
-                ))}
-              </Text>
-            </View>
-          );
-        }}
-      />
+      
 
       {/* ── [FEATURE 5] Main feed — infinite TikTok-style full-screen snap scroll ── */}
       <FlatList

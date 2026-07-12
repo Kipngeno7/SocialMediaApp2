@@ -462,9 +462,13 @@ export default function CreatePostScreen() {
                                                                                                 user_id: userId,
                                                                                                             content: postText.trim(),
                                                                                                                         category: selectedCategory === "Others" ? customCategory : (selectedCategory || "Others"),
-                                                                                                                                    media_url: mainMediaUrl || null,
-                                                                                                                                                all_media_urls: [...uploadedImages, ...uploadedVideos],
-                                                                                                                                                            audio_urls: uploadedAudios,
+                                                                                                                                    // 🌟 Change your lines 465 and 466 to look EXACTLY like this:
+                                                                                                                                    media_url: mainMediaUrl || uploadedImages[0] || uploadedVideos[0] || null,
+                                                                                                                                    
+                                                                                                                                              
+                                                                                                                                                         // 🌟 Replace your old line 467 with this exact line:
+                                                                                                                                                         audio_url: uploadedAudios?.[0] || uploadedAudios || null,
+                                                                                                                                                          
                                                                                                                                                                         hashtags: hashtags || null,
                                                                                                                                                                                     location: location || "Unknown Location",
                                                                                                                                                                                                 visibility: visibility,

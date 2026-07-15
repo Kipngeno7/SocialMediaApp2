@@ -20,7 +20,7 @@ import { CATEGORIES } from "../../src/constants/constantCategories";
 import { usePosts } from "../../src/context/PostContext";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Video } from 'react-native-compressor';
+//import { Video } from 'react-native-compressor';
 import { Ionicons } from "@expo/vector-icons";
 
 //import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -33,6 +33,11 @@ import { useNavigation } from "@react-navigation/native";
 
 
 //const storage = getStorage(app);
+// Add this temporary fake placeholder for web testing right under your imports:
+const Video = {
+  compress: async (url: string) => url // Just returns the original url without compressing
+  };
+  
 
 export const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
     // 1. Guard check: Stop immediately if the file path is empty or invalid
@@ -53,7 +58,7 @@ export const uploadFile = async (uri: string, folder: string): Promise<string | 
 
                                                     // 4. Upload raw file blob data straight into your active 'posts-media' bucket
                                                         const { data, error } = await supabase.storage
-                                                              .from('posts-media')
+                                                              .from('posts')
                                                                     .upload(filePath, blob, {
                                                                             cacheControl: '3600',
                                                                                     upsert: false,
@@ -67,7 +72,7 @@ export const uploadFile = async (uri: string, folder: string): Promise<string | 
 
                                                                                                                           // 5. Retrieve and return the public CDN URL to save into your post object
                                                                                                                               const { data: publicUrlData } = supabase.storage
-                                                                                                                                    .from('posts-media')
+                                                                                                                                    .from('posts')
                                                                                                                                           .getPublicUrl(filePath);
 
                                                                                                                                               return publicUrlData.publicUrl;
@@ -448,40 +453,67 @@ export default function CreatePostScreen() {
                 // START OF REPLACEMENT PIPELINE
                       // ==========================================
 
+                      // ==========================================
+                        // START OF REPLACEMENT PIPELINE
+                          // ==========================================
+
                             // 1. Grab current authenticated Firebase User ID dynamically
-                                  const userId = auth.currentUser?.uid || "1"; 
+                              const userId = auth.currentUser?.uid || "1";
 
-                                        // 2. Fetch the first uploaded image/video URL if it exists (PRESERVED LOGIC)
-                                              const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : (uploadedVideos.length > 0 ? uploadedVideos[0] : "");
+                                // 2. Fetch the first uploaded image/video URL if it exists
+                                  const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : 
+                                                         (uploadedVideos.length > 0 ? uploadedVideos[0] : null);
 
-                                                    // 3. Insert data cleanly directly into your Supabase Database table
-                                                          const { data: dbPost, error: supabaseError } = await supabase
-                                                                  .from("posts")
-                                                                          .insert([
-                                                                                    {
-                                                                                                user_id: userId,
-                                                                                                            content: postText.trim(),
-                                                                                                                        category: selectedCategory === "Others" ? customCategory : (selectedCategory || "Others"),
-                                                                                                                                    // 🌟 Change your lines 465 and 466 to look EXACTLY like this:
-                                                                                                                                    media_url: mainMediaUrl || uploadedImages[0] || uploadedVideos[0] || null,
+                                                           // 3. Insert data cleanly directly into your Supabase Database table
+                                                             const { data: dbPost, error: supabaseError } = await supabase
+                                                                 .from("posts")
+                                                                     .insert([
+                                                                           {
+                                                                                   user_id: userId,
+                                                                                           content: postText.trim(),
+                                                                                                   category: selectedCategory === "Others" ? customCategory : (selectedCategory || "Others"),
+                                                                                                           media_url: mainMediaUrl || null, 
+                                                                                                                   audio_url: uploadedAudios?.[0] || null,
+                                                                                                                           hashtags: hashtags || null,
+                                                                                                                                   location: location || "Unknown Location",
+                                                                                                                                           visibility: visibility,
+                                                                                                                                                   likes_count: 0,
+                                                                                                                                                           comments_count: 0,
+                                                                                                                                                                   shares_count: 0,
+                                                                                                                                                                           is_live: false,
+                                                                                                                                                                                 }
+                                                                                                                                                                                     ]);
+
+                                                                                                                                                                                       if (supabaseError) {
+                                                                                                                                                                                           throw supabaseError;
+                                                                                                                                                                                             }
+                                                                                                                                                                                             
+                                                            
+                                                            
+                                                                                  
+                                                                              
+                                                                                                  
+                                                                                                            
+                                                                                                                        
+                                                                                                                            
                                                                                                                                     
                                                                                                                                               
-                                                                                                                                                         // 🌟 Replace your old line 467 with this exact line:
-                                                                                                                                                         audio_url: uploadedAudios?.[0] || uploadedAudios || null,
+                                                                                                                              
+                                                                                                                                                  
                                                                                                                                                           
-                                                                                                                                                                        hashtags: hashtags || null,
-                                                                                                                                                                                    location: location || "Unknown Location",
-                                                                                                                                                                                                visibility: visibility,
-                                                                                                                                                                                                            likes_count: 0,
-                                                                                                                                                                                                                        comments_count: 0,
-                                                                                                                                                                                                                                  }
-                                                                                                                                                                                                                                          ])
-                                                                                                                                                                                                                                                  .select()
-                                                                                                                                                                                                                                                          .single();
+                                                                                                                                                  
+                                                                                                                                                                                
+                                                                                                                                                                                          
+                                                                                                                                                                                                        
+                                                                                                                                                                                                
+                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                        
 
-                                                                                                                                                                                                                                                                if (supabaseError) {
-                                                                                                                                                                                                                                                                        throw new Error(`Supabase Insert Failed: ${supabaseError.message}`);
-                                                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                            
 
                                                                                                                                                                                                                                                                                     // 4. Assemble the complete modern object payload structure (PRESERVED LOGIC)
                                                                                                                                                                                                                                                                                           const newPostData = {

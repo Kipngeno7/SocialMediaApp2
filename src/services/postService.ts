@@ -401,57 +401,108 @@ import {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         /**
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          * Subscribe to live changes for a single post (likes/comments)
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           */
-  export const subscribeToPostUpdates = (postId: string, callback: (post: any) => void) => {
-      // 1. Surgical helper to fetch metrics for a single row ID
-        const fetchSinglePost = async () => {
-            try {
-                  const { data, error } = await supabase
-                          .from('posts')
-                                  .select('*')
-                                          .eq('id', postId)
-                                                  .single();
+export const subscribeToPostUpdates = (postId: string, callback: (post: any) => void) => {
+    // 1. Helper to fetch and format metrics for a single row ID
+      const fetchSinglePost = async () => {
+          try {
+                const { data, error } = await supabase
+                        .from('posts')
+                                .select('*')
+                                        .eq('id', postId)
+                                                .single();
 
-                                                        if (error) throw error;
+                                                      if (error) throw error;
 
-                                                              if (data) {
-                                                                      callback({
-                                                                                id: String(data.id),
-                                                                                          userId: data.user_id,
-                                                                                                    title: data.title || "",
-                                                                                                              content: data.content || "",
-                                                                                                                        mediaUrl: data.media_url,
-                                                                                                                                  mediaType: data.media_type,
-                                                                                                                                            likesCount: data.likes_count || 0,
-                                                                                                                                                      commentsCount: data.comments_count || 0,
-                                                                                                                                                                country: data.country,
-                                                                                                                                                                          createdAt: new Date(data.created_at).getTime(),
-                                                                                                                                                                                  });
-                                                                                                                                                                                        }
-                                                                                                                                                                                            } catch (err) {
-                                                                                                                                                                                                  console.error(`Failed to fetch updates for post ${postId}:`, err);
-                                                                                                                                                                                                      }
-                                                                                                                                                                                                        };
+                                                            if (data) {
+                                                                    callback({
+                                                                              id: String(data.id),
+                                                                                        userId: data.user_id,
+                                                                                                  title: data.title || "",
+                                                                                                            content: data.content || "",
+                                                                                                            category: data.category,
+                                                                                                                // ADD THIS LINE to capture the custom text
+                                                                                                                    customCategory: data.custom_category || "", 
+                                                                                                                      mediaUrl: data.media_url,
+                                                                                                                                mediaType: data.media_type,
+                                                                                                                                          likesCount: data.likes_count || 0,
+                                                                                                                                                    commentsCount: data.comments_count || 0,
+                                                                                                                                                              country: data.country,
+                                                                                                                                                                        createdAt: new Date(data.created_at).getTime(),
+                                                                                                                                                                                });
+                                                                                                                                                                                      }
+                                                                                                                                                                                          } catch (err) {
+                                                                                                                                                                                                console.error(`Failed to fetch updates for post ${postId}:`, err);
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                      };
 
-                                                                                                                                                                                                          // 2. Fetch data right away
-                                                                                                                                                                                                            fetchSinglePost();
+                                                                                                                                                                                                        // 2. Fetch data right away on initialization
+                                                                                                                                                                                                          fetchSinglePost();
 
-                                                                                                                                                                                                              // 3. Listen live to modifications matching this distinct post ID filter row
-                                                                                                                                                                                                                const channel = supabase
-                                                                                                                                                                                                                    .channel(`single-post-${postId}`)
-                                                                                                                                                                                                                        .on(
-                                                                                                                                                                                                                              'postgres_changes',
-                                                                                                                                                                                                                                    { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${postId}` },
-                                                                                                                                                                                                                                          () => { fetchSinglePost(); }
-                                                                                                                                                                                                                                              )
-                                                                                                                                                                                                                                                  .subscribe();
+                                                                                                                                                                                                            // 3. Listen live to modifications matching this distinct post ID filter row
+                                                                                                                                                                                                              const channel = supabase
+                                                                                                                                                                                                                  .channel(`single-post-${postId}`)
+                                                                                                                                                                                                                      .on(
+                                                                                                                                                                                                                            'postgres_changes',
+                                                                                                                                                                                                                                  { 
+                                                                                                                                                                                                                                          event: '*', 
+                                                                                                                                                                                                                                                  schema: 'public', 
+                                                                                                                                                                                                                                                          table: 'posts', 
+                                                                                                                                                                                                                                                                  filter: `id=eq.${postId}` 
+                                                                                                                                                                                                                                                                        },
+                                                                                                                                                                                                                                                                              () => { 
+                                                                                                                                                                                                                                                                                      fetchSinglePost(); 
+                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                                                    .subscribe();
 
-                                                                                                                                                                                                                                                    // 4. Return identical clean up method
-                                                                                                                                                                                                                                                      return {
-                                                                                                                                                                                                                                                          close: () => {
-                                                                                                                                                                                                                                                                supabase.removeChannel(channel);
-                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                      };
-                                                                                                                                                                                                                                                                      };
+                                                                                                                                                                                                                                                                                                      // 4. Return clean up method to prevent memory leaks
+                                                                                                                                                                                                                                                                                                        return {
+                                                                                                                                                                                                                                                                                                            close: () => {
+                                                                                                                                                                                                                                                                                                                  supabase.removeChannel(channel);
+                                                                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                                                        };
+                                                                                                                                                                                                                                                                                                                        };
+
+
+
+                                                              
+                                                                
+                                                                        
+                                                                                  
+                                                                                                
+                                                                                                      
+                                                                                                            
+                                                                                                                          
+                                                                                                                                  
+                                                                                                                                              
+                                                                                                                                                    
+                                                                                                                                                        
+                                                                                                                                                                          
+                                                                                                                                                                                
+                                                                                                                                                                                      
+                                                                                                                                                                                        
+                                                                                                                                                                                                      
+                                                                                                                                                                                                      
+
+                                                                                                                                                                                                
+                                                                                                                                                                                                      
+
+                                                                                                                                                                                                    
+                                                                                                                                                                                                      
+                                                                                                                                                                                                          
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                
+                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                    
+
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                        
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

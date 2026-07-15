@@ -88,32 +88,63 @@ const CATEGORY_EMOJI: Record<string, string> = {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const renderCategoryBadge = (post: any): string => {
-    if (!post) return "General Post ⚪";
+const sanitizeAndCapitalizeCategory = (categoryStr: string): string => {
+    if (!categoryStr) return "Others";
+      
+        return categoryStr
+            .split("/")
+                .map(part => 
+                      part
+                              .trim()
+                                      .split(" ")
+                                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                                      .join(" ")
+                                                          )
+                                                              .join("/");
+                                                              };
 
-      // 1. Check if it is a custom category from the 'Others' selection box
-        if (post.category === "Other" && post.otherCategoryText) {
-            const customText = post.otherCategoryText.trim();
+                                                              const renderCategoryBadge = (post: any): string => {
+                                                                if (!post) return "General Post ✨";
+
+                                                                  // 1. Handle Custom "Others" Category typing
+                                                                    if (post.category === "Others" || post.category === "Other") {
+                                                                        const customText = post.customCategoryTitle || post.customCategory || "Custom Title";
+                                                                            const capitalizedCustom = sanitizeAndCapitalizeCategory(customText);
+                                                                                return `${capitalizedCustom} Post ⚪`;
+                                                                                  }
+
+                                                                                    // 2. Standardize casing (fixes 'Political/governance' -> 'Political/Governance')
+                                                                                      const rawCategory = post.category || "Others";
+                                                                                        const capitalizedNormal = sanitizeAndCapitalizeCategory(rawCategory);
+
+                                                                                          // 3. Find your exact chosen emoji from above
+                                                                                            const emoji = CATEGORY_EMOJI[capitalizedNormal] || "✨";
+
+                                                                                              // Returns ONLY the clean text structure layout without secondary copies on the right side
+                                                                                                return `${capitalizedNormal} Post ${emoji}`;
+                                                                                                };
+
+
                 
-                    // Capitalize first letters of each word cleanly
-                        const capitalizedCustom = customText
-                              .split(" ")
-                                    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                          .join(" ");
+      
+        
+                      
+                                
+                                  
 
-                                              return `${capitalizedCustom} Post ⚪`;
-                                                }
+                                      
+                                              
 
-                                                  // 2. Default category handler logic block
-                                                    const normalCategory = post.category || "Others";
-                                                      const capitalizedNormal = normalCategory
-                                                          .split(" ")
-                                                              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                                                  .join(" ");
+                                      
+                                          
+                                        
+                                                    
+                                                          
+                                                          
 
-                                                                    const emoji = CATEGORY_EMOJI[capitalizedNormal] || CATEGORY_EMOJI[normalCategory] || "⚪";
-                                                                      return `${capitalizedNormal} Post ${emoji}`;
-                                                                      };
+                                                        
+                                                            
+                                                                  
 
 
                                                     
@@ -1480,7 +1511,11 @@ export default function FeedScreen() {
 
                 // If "Others" is toggled, we must also match posts with custom written titles
                     const includesOthers = selectedCategories.includes("Others") || selectedCategories.includes("Other");
-                        if (includesOthers && post.category === "Other") {
+                    const isCustomCategory = !Object.keys(CATEGORY_EMOJI).includes(post.category);
+
+                        if (includesOthers && (post.category === "Other" || post.category === "Others" || isCustomCategory)) {
+
+                        
                               return true;
                                   }
 
@@ -1625,7 +1660,8 @@ export default function FeedScreen() {
                                                                                                                                                                                           }
                                                                                                                                                                                                   ]}
                                                                                                                                                                                                         >
-                                                                                                                                                                                                                <Text style={{ color: isSelected ? "#ff0050" : color, fontWeight: "bold" }}>
+                                                                                                                                                                                                                <Text style={{ color: cat === "Technological" && !isSelected ? "#ffffff" : (isSelected ? "#fff050" : color), fontWeight: "bold" }}>
+
                                                                                                                                                                                                                           {cat} {emoji}
                                                                                                                                                                                                                                   </Text>
                                                                                                                                                                                                                                           {isSelected && (

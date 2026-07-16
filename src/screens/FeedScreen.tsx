@@ -76,7 +76,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   "Entertainment": "🌸",
   "Technological": "🟣",
   "Religious": "🕊️",
-  "Development/Economic": "🟤",
+  "Development/Economics": "🟤",
   "Personal/Warm Touch": "💛",
   "Public Information": "🟦",
   "Sociocultural": "🎭",
@@ -419,27 +419,22 @@ const CommentItem = ({
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={styles.commentUser}>{comment.user?.name}</Text>
 
-            {comment.user?.isVerified && (
-              <Text style={{ color: "#1DA1F2", marginLeft: 5 }}>👑</Text>
-            )}
+          
 
             {comment.isPinned && (
               <Text style={{ color: "#ffcc00", marginLeft: 8 }}>📌</Text>
             )}
           </View>
 
-          <Text style={[styles.commentText, { color: "#ffffff", fontSize: 13, fontWeight: "normal", opacity: 1 }]}>
-              {comment && comment.text ? comment.text : ""}
-              </Text>
+        <Text style={[styles.commentText, { color: "#111111", fontSize: 13, fontWeight: "normal", opacity: 1 }]}>
+            {comment && comment.text ? comment.text : ""}
+            </Text>
+
               
 
           {/* Actions */}
           <View style={{ flexDirection: "row", marginTop: 4 }}>
-            <TouchableOpacity onPress={handleLike}>
-              <Text style={{ color: "#fff", marginRight: 15 }}>
-                ❤️ {likesCount}
-              </Text>
-            </TouchableOpacity>
+            
 
             <TouchableOpacity
               onPress={() => setShowReplyInput(!showReplyInput)}
@@ -462,25 +457,34 @@ const CommentItem = ({
 
           {/* Reply input */}
           {showReplyInput && (
-            <View style={{ flexDirection: "row", marginTop: 5 }}>
-              <TextInput
-                value={replyText}
-                onChangeText={setReplyText}
-                placeholder="Write reply..."
-                placeholderTextColor="#aaa"
-                style={{
-                  flex: 1,
-                  backgroundColor: "#222",
-                  color: "#fff",
-                  paddingHorizontal: 10,
-                  borderRadius: 20,
-                }}
-              />
-              <TouchableOpacity onPress={handleAddReply}>
-                <Text style={{ color: "#ff0050", marginLeft: 10 }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+            <View style={{ flexDirection: "column", marginTop: 8, alignItems: "center" }}>
+                <TextInput
+                      value={replyText}
+                            onChangeText={setReplyText}
+                                  placeholder="Write reply..."
+                                        placeholderTextColor="#aaa"
+                                              style={{
+                                                      width: "100%", 
+                                                              height: 40,
+                                                                      backgroundColor: "#222",
+                                                                              color: "#fff",
+                                                                                      paddingHorizontal: 15,
+                                                                                              borderRadius: 20,
+                                                                                                    }}
+                                                                                                        />
+                                                                                                            <TouchableOpacity 
+                                                                                                                  onPress={handleAddReply}
+                                                                                                                        style={{
+                                                                                                                                marginTop: 8,
+                                                                                                                                        paddingVertical: 6,
+                                                                                                                                                paddingHorizontal: 16,
+                                                                                                                                                      }}
+                                                                                                                                                          >
+                                                                                                                                                                <Text style={{ color: "#ff0050", fontWeight: "bold" }}>Send</Text>
+                                                                                                                                                                    </TouchableOpacity>
+                                                                                                                                                                      </View>
+                                                                                                                                                                      )}
+
 
           {/* Recursive replies */}
           {!collapsed &&
@@ -1173,22 +1177,66 @@ const handleSendReply = () => {
             )}
           />
 
-          {/* Reply input */}
-          <View style={styles.replyContainer}>
-            <TextInput
-              placeholder="Write a reply..."
-              placeholderTextColor="#aaa"
-              value={replyText}
-              onChangeText={setReplyText}
-              style={styles.replyInput}
-            />
-            <TouchableOpacity
-              onPress={handleSendReply}
-              style={styles.replyButton}
-            >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Send</Text>
-            </TouchableOpacity>
-          </View>
+         {/* Reply input */}
+         <View 
+           style={[
+               styles.replyContainer, 
+                   { 
+                         flexDirection: "column", 
+                               alignItems: "flex-start",  // Aligns the whole input block to the left side
+                                     paddingRight: 60,          // Forces a safe margin on the right so it never hits the icons
+                                           width: "100%",
+                                               }
+                                                 ]}
+                                                 >
+                                                   <TextInput
+                                                       placeholder="Write a reply..."
+                                                           placeholderTextColor="#aaa"
+                                                               value={replyText}
+                                                                   onChangeText={setReplyText}
+                                                                       style={[
+                                                                             styles.replyInput, 
+                                                                                   { 
+                                                                                           width: "80%",            // Makes the black input bar shorter horizontally
+                                                                                                   height: 40,
+                                                                                                         }
+                                                                                                             ]}
+                                                                                                               />
+                                                                                                                 <TouchableOpacity
+                                                                                                                     onPress={handleSendReply}
+                                                                                                                         style={[
+                                                                                                                               styles.replyButton, 
+                                                                                                                                     { 
+                                                                                                                                             marginTop: 10,
+                                                                                                                                                     marginLeft: "25%",       // Centers the Send button cleanly right under the shorter bar
+                                                                                                                                                           }
+                                                                                                                                                               ]}
+                                                                                                                                                                 >
+                                                                                                                                                                     <Text style={{ color: "#fff", fontWeight: "bold" }}>Send</Text>
+                                                                                                                                                                       </TouchableOpacity>
+                                                                                                                                                                       </View>
+                                                                                                                                                                       
+                                              
+                                                      
+                                                              
+                                                                  
+                                                                        
+                                                                    
+                                                                                           
+                                                                                            
+                                                                                              
+                                                                                        
+                                                                                              
+                                                                                                        
+                                                                                                          
+                                                                                                                  
+                                                                                                                
+                                                                                                                              
+                                                                                                                                    
+                                                                                                                              
+                                                                                                                                                
+                                                                                                                                                      
+
         </View>
       )}
 

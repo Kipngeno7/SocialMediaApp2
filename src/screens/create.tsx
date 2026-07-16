@@ -39,49 +39,28 @@ const Video = {
   };
   
 
-export const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
-    // 1. Guard check: Stop immediately if the file path is empty or invalid
-      if (!uri || typeof uri !== 'string' || uri.trim() === "") {
-          console.log("Upload bypassed: URI path is empty.");
-              return null;
-                }
-                  
-                    try {
-                        // 2. Fetch local asset and convert to a file data blob
-                            const response = await fetch(uri);
-                                if (!response.ok) return null;
-                                    const blob = await response.blob();
 
-                                        // 3. Generate a clean unique filename string layout
-                                            const filename = uri.substring(uri.lastIndexOf("/") + 1);
-                                                const filePath = `${folder}/${Date.now()}_${filename}`;
+                                                            
+                                                                  
+                                                                                    
+                                                                                  
+                                                                                      
 
-                                                    // 4. Upload raw file blob data straight into your active 'posts-media' bucket
-                                                        const { data, error } = await supabase.storage
-                                                              .from('posts')
-                                                                    .upload(filePath, blob, {
-                                                                            cacheControl: '3600',
-                                                                                    upsert: false,
-                                                                                            contentType: blob.type // Automatically preserves image/video types safely
-                                                                                                  });
+                                                                                            
+                                                                                                    
+                                                                                                            
+                                                                                                                
 
-                                                                                                      if (error) {
-                                                                                                            console.error("Supabase file write error details:", error.message);
-                                                                                                                  return null;
-                                                                                                                      }
+                                                                                                            
+                                                                                                                  
+                                                                                                                            
+                                                                                                                                
 
-                                                                                                                          // 5. Retrieve and return the public CDN URL to save into your post object
-                                                                                                                              const { data: publicUrlData } = supabase.storage
-                                                                                                                                    .from('posts')
-                                                                                                                                          .getPublicUrl(filePath);
+                                                                                                                              
 
-                                                                                                                                              return publicUrlData.publicUrl;
-
-                                                                                                                                                } catch (error) {
-                                                                                                                                                    console.log("Safe catch triggered for file storage upload failure:", error);
-                                                                                                                                                        return null; 
-                                                                                                                                                          }
-                                                                                                                                                          };
+                                                                                                                                    
+                                                                                                                                          
+                                                                                                                                              
 
 
 
@@ -155,6 +134,50 @@ export default function CreatePostScreen() {
   const [videoUris, setVideoUris] = useState<string[]>([]);
   const [videoThumbnails, setVideoThumbnails] = useState<{ [key: string]: string }>({});
   const [uploadProgress, setUploadProgress] = useState(0);
+  const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
+        // 1. Guard check: Stop immediately if the file path is empty or invalid
+              if (!uri || typeof uri !== 'string' || uri.trim() === "") {
+                        console.log("Upload bypassed: URI path is empty.");
+                                      return null;
+                                                      }
+                                                                        
+                                                                                            try {
+                                                                                                                    // 2. Fetch local asset and convert to a file data blob
+                                                                                                                                                const response = await fetch(uri);
+                                                                                                                                                                                if (!response.ok) return null;
+                                                                                                                                                                                                                    const blob = await response.blob();
+
+                                                                                                                                                                                                                                                            // 3. Generate a clean unique filename string layout
+                                                                                                                                                                                                                                                                                                        const filename = uri.substring(uri.lastIndexOf("/") + 1);
+                                                                                                                                                                                                                                                                                                                                                        const filePath = `${folder}/${Date.now()}_${filename}`;
+
+                                                                                                                                                                                                                                                                                                                                                                                                            // 4. Upload raw file blob data straight into your active 'posts-media' bucket
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    const { data, error } = await supabase.storage
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .from('posts-media')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      .upload(filePath, blob, {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  cacheControl: '3600',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      upsert: false,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  contentType: blob.type // Automatically preserves image/video types safely
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          if (error) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      console.error("Supabase file write error details:", error.message);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return null;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        // 5. Retrieve and return the public CDN URL to save into your post object
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      const { data: publicUrlData } = supabase.storage
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          .from('posts-media')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .getPublicUrl(filePath);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  return publicUrlData.publicUrl;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  } catch (error) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      console.log("Safe catch triggered for file storage upload failure:", error);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              return null; 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  };
+  
 
   const removeImage = (uri: string) => {
     setImageUris(prev => prev.filter(item => item !== uri));
@@ -169,20 +192,18 @@ export default function CreatePostScreen() {
     });
   };
 
-  const generateThumbnail = useCallback(async (uri: string) => {
-    try {
-      const { uri: thumbnail } = await VideoThumbnails.getThumbnailAsync(uri, {
-        time: 1500,
-      });
+    const generateThumbnail = useCallback(async (uri: string) => {
+          try {
+                setVideoThumbnails(prev => ({
+                        ...prev,
+                                [uri]: uri, // Fallback directly to the video to bypass package crash
+                                      }));
+                                          } catch (e) {
+                                                console.log("Thumbnail error:", e);
+                                                    }
+                                                      }, []);
 
-      setVideoThumbnails(prev => ({
-        ...prev,
-        [uri]: thumbnail,
-      }));
-    } catch (e) {
-      console.log("Thumbnail error:", e);
-    }
-  }, []);
+    
 
   useEffect(() => {
     if (selectedCategory) {
@@ -285,14 +306,27 @@ export default function CreatePostScreen() {
     }
   };
 
-  // GO LIVE
-  const handleGoLive = () => {
-    const livePlaceholder = "https://via.placeholder.com/300x200.png?text=LIVE+STREAM";
+// GO LIVE
+const handleGoLive = async () => {
+  try {
+      const livePlaceholder = "https://placeholder.com";
+          
+              await supabase.from("posts").insert([
+                    {
+                            user_id: auth.currentUser?.uid || "1",
+                                    text: postText || "🔴 LIVE NOW",
+                                            media_url: livePlaceholder,
+                                                    location: location,
+                                                            category: "Public Information"
+                                                                  }
+                                                                      ]);
 
-    createPost("1", postText || "🔴 LIVE NOW", livePlaceholder, location, undefined);
+                                                                          Alert.alert("LIVE started!");
+                                                                            } catch (error) {
+                                                                                console.log("Live stream insert error:", error);
+                                                                                  }
+                                                                                  };
 
-    Alert.alert("LIVE started!");
-  };
 
   // AUDIO RECORD
   const startRecording = async () => {
@@ -361,23 +395,30 @@ export default function CreatePostScreen() {
   };
 
   const compressVideo = async (uri: string): Promise<string> => {
-    try {
-      const compressedUri = await Video.compress(
-        uri,
-        {
-          compressionMethod: 'auto',
-        },
-        (progress) => {
-          console.log("Video compression progress:", progress);
-        }
-      );
+      try {
+          // Return original video URI to prevent package compilation errors
+              return uri;
+                } catch (error) {
+                    console.log("Video helper error:", error);
+                        return uri;
+                          }
+                          };
 
-      return compressedUri;
-    } catch (error) {
-      console.log("Video compression error:", error);
-      return uri;
-    }
-  };
+  
+                                    
+                                  
+                                    
+                                      
+                                              
+                                                        
+                                                  
+
+  
+                                              
+                                                        
+                                                    
+
+  
 
   // Submit post
   const submitPost = async () => {
@@ -517,7 +558,8 @@ export default function CreatePostScreen() {
 
                                                                                                                                                                                                                                                                                     // 4. Assemble the complete modern object payload structure (PRESERVED LOGIC)
                                                                                                                                                                                                                                                                                           const newPostData = {
-                                                                                                                                                                                                                                                                                                  id: dbPost?.id?.toString() || Date.now().toString(),
+                                                                                                                                                                                                                                                                                                  id: dbPost && 'id' in dbPost ? String((dbPost as any).id) : Date.now().toString(),
+                                                                                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                           user: {
                                                                                                                                                                                                                                                                                                                     id: userId,
                                                                                                                                                                                                                                                                                                                               name: "Dennis",
@@ -1074,7 +1116,5 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 });
-function createPost(arg0: string, arg1: string, livePlaceholder: string, location: string, undefined: undefined) {
-  throw new Error("Function not implemented.");
-}
+
 

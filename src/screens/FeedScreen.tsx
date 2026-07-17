@@ -543,9 +543,8 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   const flatListRef = useRef<FlatList>(null);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
-  const isVideo =
-    item?.mediaUris?.[0] &&
-    item.mediaUris[0].toLowerCase().endsWith(".mp4");
+  const isVideo = Array.isArray(item?.mediaUris) && item.mediaUris.length > 0 && String(item.mediaUris[0]).toLowerCase().endsWith(".mp4");
+  
 
   const sortedComments = [...comments].sort(
     (a, b) => Number(b.isPinned) - Number(a.isPinned)
@@ -850,16 +849,38 @@ const handleSendReply = () => {
       >
         <View style={{ flex: 1 }}>
           {/* Video */}
-          {isVideo && (
-            <Video
-              ref={videoRef}
-              source={{ uri: item.mediaUris[0] }}
-              style={styles.fullScreenVideo}
-              resizeMode={ResizeMode.COVER}
-              isLooping
-              onPlaybackStatusUpdate={handleVideoPlaybackStatus}
-            />
-          )}
+                    {isVideo && item.mediaUris && item.mediaUris.length > 0 && (
+                                  <Video
+                                                ref={videoRef}
+                                                              source={{ uri: item.mediaUris[0] }} // 🔑 Fixed: Grab the first element from your data array
+                                                                            style={styles.fullScreenVideo}
+                                                                                          resizeMode={ResizeMode.COVER}
+                                                                                                        isLooping
+                                                                                                                      onPlaybackStatusUpdate={handleVideoPlaybackStatusUpdate}
+                                                                                                                                  />
+                                                                                                                                            )}
+
+                                                                                                                                                      {!isVideo && item.mediaUris && item.mediaUris.length > 0 && (
+                                                                                                                                                                  <FlatList
+                                                                                                                                                                                data={item.mediaUris}
+                                                                                                                                                                                              horizontal
+                                                                                                                                                                                                            pagingEnabled // 🔑 Snaps smoothly from image to image
+                                                                                                                                                                                                                          showsHorizontalScrollIndicator={false}
+                                                                                                                                                                                                                                        keyExtractor={(photoUrl, index) => index.toString()}
+                                                                                                                                                                                                                                                      renderItem={({ item: photoUrl }) => (
+                                                                                                                                                                                                                                                                      <Image
+                                                                                                                                                                                                                                                                                        source={{ uri: photoUrl }}
+                                                                                                                                                                                                                                                                                                          style={styles.fullScreenVideo} // Fills the container dimensions perfectly
+                                                                                                                                                                                                                                                                                                                            resizeMode="cover"
+                                                                                                                                                                                                                                                                                                                                            />
+                                                                                                                                                                                                                                                                                                                                                          )}
+                                                                                                                                                                                                                                                                                                                                                                      />
+                                                                                                                                                                                                                                                                                                                                                                                )}
+
+                    
+
+                                                        
+                                                        
 
         {/* Post text words with high contrast display visibility rule */}
         {!editing && (

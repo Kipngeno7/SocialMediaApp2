@@ -711,7 +711,7 @@
   dependencies:
     node-forge "^1.3.3"
 
-"@expo/config-plugins@^5.0.1", "@expo/config-plugins@~5.0.0":
+"@expo/config-plugins@^5.0.1":
   version "5.0.4"
   resolved "https://registry.yarnpkg.com/@expo/config-plugins/-/config-plugins-5.0.4.tgz#216fea6558fe66615af1370de55193f4181cb23e"
   integrity sha512-vzUcVpqOMs3h+hyRdhGwk+eGIOhXa5xYdd92yO17RMNHav3v/+ekMbs7XA2c3lepMO8Yd4/5hqmRw9ZTL6jGzg==
@@ -3622,12 +3622,10 @@ expo-asset@~56.0.18:
     "@expo/image-utils" "^0.10.1"
     expo-constants "~56.0.19"
 
-expo-av@~12.0.4:
-  version "12.0.4"
-  resolved "https://registry.yarnpkg.com/expo-av/-/expo-av-12.0.4.tgz#00cf2da76c0c718a1d316f188247dee85ce512c2"
-  integrity sha512-wq3wx6J1aacZEPZce9TK1+o4YTAOWyb5cJ4CqfsgHcXeUdHyO3qbva/5uecigpEYlCxOlWYFhAz2T0dQ7nWSpQ==
-  dependencies:
-    "@expo/config-plugins" "~5.0.0"
+expo-av@^16.0.8:
+  version "16.0.8"
+  resolved "https://registry.yarnpkg.com/expo-av/-/expo-av-16.0.8.tgz#b1671127f3b2ecaeb9c69fc2301cf791d4504dd6"
+  integrity sha512-cmVPftGR/ca7XBgs7R6ky36lF3OC0/MM/lpgX/yXqfv0jASTsh7AYX9JxHCwFmF+Z6JEB1vne9FDx4GiLcGreQ==
 
 expo-constants@^56.0.18, expo-constants@~14.0.0, expo-constants@~56.0.18, expo-constants@~56.0.19, expo-constants@~56.0.20:
   version "56.0.18"

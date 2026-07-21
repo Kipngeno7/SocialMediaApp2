@@ -523,6 +523,9 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   const [likesCount, setLikesCount] = useState(item?.likes ?? 0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [payMenuVisible, setPayMenuVisible] = useState(false);
+  const [localPaymentMethods, setLocalPaymentMethods] = useState<any[]>([]);
+  const [isLoadingMethods, setIsLoadingMethods] = useState<boolean>(false);
+
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [liveSeconds, setLiveSeconds] = useState(0);
   const [watchTime, setWatchTime] = useState(0);
@@ -630,6 +633,35 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
       else videoRef.current.pauseAsync();
     }
   }, [isActive]);
+  const handleTogglePayMenu = async () => {
+      if (payMenuVisible) {
+          setPayMenuVisible(false);
+              return;
+                }
+
+                  setPayMenuVisible(true);
+                    setIsLoadingMethods(true);
+
+                      try {
+                          // Replace this URL with your deployed Supabase Edge Function URL
+                              const response = await fetch("https://jywoururkjaszyfrfqnd.supabase.co");
+                                  const data = await response.json();
+
+                                      if (data.success && data.methods) {
+                                            setLocalPaymentMethods(data.methods);
+                                                } else {
+                                                      // Fallback default if backend fails
+                                                            setLocalPaymentMethods([{ id: 'card', name: 'Bank Card' }]);
+                                                                }
+                                                                  } catch (error) {
+                                                                      console.error("Error fetching local payment rails:", error);
+                                                                          setLocalPaymentMethods([{ id: 'card', name: 'Bank Card' }]);
+                                                                            } finally {
+                                                                                setIsLoadingMethods(false);
+                                                                                  }
+                                                                                  };
+
+  
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -1000,13 +1032,43 @@ const handleSendReply = () => {
         {/* Unified Expandable Support Button & Menu */}
         {/* Unified Expandable Support Button & Menu */}
                 <View style={{ alignItems: "center", position: "relative" }}>
-                          <TouchableOpacity
-                            style={[styles.iconButton, { minHeight: 50, justifyContent: 'center' }]}
-                              onPress={() => setPayMenuVisible((prev) => !prev)}
-                              >
+                      
+
+                            
+                        
+                              <TouchableOpacity
+                                style={[styles.iconButton, { minHeight: 50, justifyContent: 'center' }]}
+                                  onPress={handleTogglePayMenu}
+                                  >
+
                                 <Text style={styles.iconText}>💰</Text>
                                   <Text style={[styles.countText, { textAlign: 'center', width: 60 }]}>Support</Text>
                                   </TouchableOpacity>
+                                  {payMenuVisible && (
+                                      <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
+                                          {isLoadingMethods ? (
+                                                // Display standard loading indicator while querying country rails
+                                                      <ActivityIndicator size="small" color="#ffffff" style={{ padding: 10 }} />
+                                                          ) : localPaymentMethods.length === 0 ? (
+                                                                // Emergency fallback component if list returns empty
+                                                                      <TouchableOpacity onPress={() => handleDonation("Bank Card", 50)}>
+                                                                              <Text style={styles.payOption}>➡️ Bank Card</Text>
+                                                                                    </TouchableOpacity>
+                                                                                        ) : (
+                                                                                              // Loop through only the valid options returned by Airwallex
+                                                                                                    localPaymentMethods.map((method) => (
+                                                                                                            <TouchableOpacity 
+                                                                                                                      key={method.id} 
+                                                                                                                                onPress={() => handleDonation(method.name, 50)}
+                                                                                                                                        >
+                                                                                                                                                  <Text style={styles.payOption}>➡️ {method.name}</Text>
+                                                                                                                                                          </TouchableOpacity>
+                                                                                                                                                                ))
+                                                                                                                                                                    )}
+                                                                                                                                                                      </View>
+                                                                                                                                                                      )}
+
+                                  
 
                                 
                                                 
@@ -1015,45 +1077,45 @@ const handleSendReply = () => {
                                                                                     
                                                                                       
 
-                                                                                                        {payMenuVisible && (
-                                                                                                                    <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
-                                                                                                                                  <TouchableOpacity onPress={() => handleDonation("Daraja", 50)}>
-                                                                                                                                                  <Text style={styles.payOption}>🇰🇪 M-Pesa</Text>
-                                                                                                                                                                </TouchableOpacity>
-                                                                                                                                                                              <TouchableOpacity onPress={() => handleDonation("PayPal", 50)}>
-                                                                                                                                                                                              <Text style={styles.payOption}>💳 PayPal</Text>
-                                                                                                                                                                                                            </TouchableOpacity>
-                                                                                                                                                                                                                          <TouchableOpacity onPress={() => handleDonation("Stripe", 50)}>
-                                                                                                                                                                                                                                          <Text style={styles.payOption}>🌍 Stripe</Text>
-                                                                                                                                                                                                                                                        </TouchableOpacity>
-                                                                                                                                                                                                                                                                      <TouchableOpacity onPress={() => handleDonation("MTN", 50)}>
-                                                                                                                                                                                                                                                                                      <Text style={styles.payOption}>🟡 MTN</Text>
-                                                                                                                                                                                                                                                                                                    </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                  <TouchableOpacity onPress={() => handleDonation("Airtel", 50)}>
-                                                                                                                                                                                                                                                                                                                                  <Text style={styles.payOption}>🔴 Airtel</Text>
-                                                                                                                                                                                                                                                                                                                                                </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                              <TouchableOpacity onPress={() => handleDonation("GCash", 50)}>
-                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.payOption}>🔵 GCash</Text>
-                                                                                                                                                                                                                                                                                                                                                                                            </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                                                            <TouchableOpacity onPress={() => handleDonation("Pix" as any, 50)}>
-                                                                                                                                                                                                                                                                                                                                                                                              <Text style={styles.payOption}>🟢 Pix</Text>
-                                                                                                                                                                                                                                                                                                                                                                                              </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                                                              <TouchableOpacity onPress={() => handleDonation("WeChat" as any, 50)}>
-                                                                                                                                                                                                                                                                                                                                                                                                <Text style={styles.payOption}>🟢 WeChat</Text>
-                                                                                                                                                                                                                                                                                                                                                                                                </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                                                                <TouchableOpacity onPress={() => handleDonation("UPI" as any, 50)}>
-                                                                                                                                                                                                                                                                                                                                                                                                  <Text style={styles.payOption}>🇮🇳 UPI</Text>
-                                                                                                                                                                                                                                                                                                                                                                                                  </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                                                                  <TouchableOpacity onPress={() => handleDonation("AirWallex" as any, 50)}>
-                                                                                                                                                                                                                                                                                                                                                                                                    <Text style={styles.payOption}>🌐 AirWallex</Text>
-                                                                                                                                                                                                                                                                                                                                                                                                    </TouchableOpacity>
+                                          
+                                                                                                                    
+                                                                                                                              
+                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                        
+                                                                                                                                                                                  
+                                                                                                                                                                                                  
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                      
 
-                                                                                                                                                                                                                                                                                                                                                                                                          <TouchableOpacity onPress={() => handleDonation("Bank", 50)}>
-                                                                                                                                                                                                                                                                                                                                                                                                                          <Text style={styles.payOption}>🏦 Bank Card</Text>
-                                                                                                                                                                                                                                                                                                                                                                                                                                        </TouchableOpacity>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    </View>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                              )}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </View>
+                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 
                     
                 
@@ -1086,7 +1148,7 @@ const handleSendReply = () => {
                                                                                                                                                                             
                                                                                                                                                                                     
 
-
+</View>
         
       </View>
 
@@ -1478,41 +1540,78 @@ export default function FeedScreen() {
                                                                                           };
 
                                                                                             // --- Payment handlers ---
-                                                                                              // --- Payment handlers ---
-                                                                                                const handleDonation = async (method: "Daraja" | "Stripe" | "PayPal" | "MTN" | "Airtel" | "GCash" | "Bank" | "Pix" | "WeChat" | "UPI" | "AirWallex", amount = 50) => {
+                                                                                               // --- Payment handlers ---
+                                                                                                 const handleDonation = async (method: string, amount = 50) => {
+
+                                                                                                         try {
+                                                                                                               const streamerAmount = amount * (1 - PLATFORM_CUT);
+                                                                                                                     const donorName = auth.currentUser?.displayName || "Anonymous";
+
+                                                                                                                           // 🟩 PASTE THIS NEW CODE BLOCK HERE:
+                                                                                                                                 const response = await fetch("https://jywoururkjaszyfrfqnd.supabase.co", {
+                                                                                                                                         method: "POST",
+                                                                                                                                                 headers: {
+                                                                                                                                                           "Content-Type": "application/json",
+                                                                                                                                                                   },
+                                                                                                                                                                           body: JSON.stringify({
+                                                                                                                                                                                     amount: amount,
+                                                                                                                                                                                               currency: "usd",
+                                                                                                                                                                                                         streamerId: streamerId,
+                                                                                                                                                                                                                   method: method 
+                                                                                                                                                                                                                           })
+                                                                                                                                                                                                                                 });
+
+                                                                                                                                                                                                                                       const paymentResult = await response.json();
+
+                                                                                                                                                                                                                                             if (!paymentResult.success) {
+                                                                                                                                                                                                                                                     throw new Error(paymentResult.error || "Payment processing failed");
+                                                                                                                                                                                                                                                           }
+                                                                                                                                                                                                                                                                 // 🟩 END OF PASTED BLOCK
+
+                                                                                                                                                                                                                                                                       setPopup(`${method} Payment Successful! Contributed $${streamerAmount}`);
+                                                                                                                                                                                                                                                                             setTimeout(() => setPopup(null), 6000);
+
+                                                                                                                                                                                                                                                                                   // Trigger the floating bubble element
+                                                                                                                                                                                                                                                                                         addFloatingDonation(streamerAmount, method, donorName);
+
+                                                                                                                                                                                                                                                                                             } catch (err: any) {
+                                                                                                                                                                                                                                                                                                   Alert.alert("Error", err.message);
+                                                                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                                                                         };
+
+                                                                                        
                                                                                                 
-                                                                                                  try {
-                                                                                                        const streamerAmount = amount * (1 - PLATFORM_CUT);
-                                                                                                              const donorName = auth.currentUser?.displayName || "Anonymous";
+                                                                                              
+                                                                                            
+                                                                                                    
 
-                                                                                                                    // Call your backend server endpoints safely
-                                                                                                                      if (method === "Daraja") {
-                                                                                                                                const res = await axios.post("http://YOUR_IP:3000/api/mpesa/stkpush", {
-                                                                                                                                          phoneNumber: auth.currentUser?.phoneNumber || "2547XXXXXXXX",
-                                                                                                                                                    amount,
-                                                                                                                                                              accountReference: streamerId,
-                                                                                                                                                                        transactionDesc: "Tip",
-                                                                                                                                                                                });
-                                                                                                                                                                                        if (!res.data.success) throw new Error("M-Pesa failed");
-                                                                                                                                                                                              } else {
-                                                                                                                                                                                                      await axios.post("http://YOUR_IP:3000/api/stripe/charge", {
-                                                                                                                                                                                                                amount,
-                                                                                                                                                                                                                          currency: "usd",
-                                                                                                                                                                                                                                    streamerId,
-                                                                                                                                                                                                                                              method,
-                                                                                                                                                                                                                                                      });
-                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                  // 🔼 END OF THE PASTED BLOCK 🔼
+                                                                                                            
+                                                                                                                
+                                                                                                                          
+                                                                                                                                  
+                                                                                                                                                
+                                                                                                                                                    
+                                                                                                                                                                    
+                                                                                                                                                                          
+                                                                                                                                                                              
+                                                                                                                                                                                          
+                                                                                                                                                                                              
+                                                                                                                                                                                                        
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                        
 
-                                                                                                                                                                                                                                                                        setPopup(`${method} Payment Successful! Contributed $${streamerAmount}`);
-                                                                                                                                                                                                                                                                              setTimeout(() => setPopup(null), 6000);
+                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                    
 
-                                                                                                                                                                                                                                                                                    // Trigger the floating bubble element
-                                                                                                                                                                                                                                                                                          addFloatingDonation(streamerAmount, method, donorName);
-                                                                                                                                                                                                                                                                                              } catch (err: any) {
-                                                                                                                                                                                                                                                                                                    Alert.alert("Error", err.message);
-                                                                                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                                                                                          };
+                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                              
                                                                                                                         
   // ── Category filter ───────────────────────────────────────────────────────────
   const toggleCategory = (category: string) => {

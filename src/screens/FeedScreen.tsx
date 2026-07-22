@@ -26,6 +26,7 @@ import {
   
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Linking,
 } from "react-native";
 
 import { Video, AVPlaybackStatus, ResizeMode } from "expo-av";
@@ -643,7 +644,7 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
                     setIsLoadingMethods(true);
 
                       try {
-                          // Replace this URL with your deployed Supabase Edge Function URL
+                          
                               const response = await fetch("https://jywoururkjaszyfrfqnd.supabase.co");
                                   const data = await response.json();
 
@@ -1044,29 +1045,50 @@ const handleSendReply = () => {
                                 <Text style={styles.iconText}>💰</Text>
                                   <Text style={[styles.countText, { textAlign: 'center', width: 60 }]}>Support</Text>
                                   </TouchableOpacity>
-                                  {payMenuVisible && (
-                                      <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
-                                          {isLoadingMethods ? (
-                                                // Display standard loading indicator while querying country rails
-                                                      <ActivityIndicator size="small" color="#ffffff" style={{ padding: 10 }} />
-                                                          ) : localPaymentMethods.length === 0 ? (
-                                                                // Emergency fallback component if list returns empty
-                                                                      <TouchableOpacity onPress={() => handleDonation("Bank Card", 50)}>
-                                                                              <Text style={styles.payOption}>➡️ Bank Card</Text>
-                                                                                    </TouchableOpacity>
-                                                                                        ) : (
-                                                                                              // Loop through only the valid options returned by Airwallex
-                                                                                                    localPaymentMethods.map((method) => (
-                                                                                                            <TouchableOpacity 
-                                                                                                                      key={method.id} 
-                                                                                                                                onPress={() => handleDonation(method.name, 50)}
-                                                                                                                                        >
-                                                                                                                                                  <Text style={styles.payOption}>➡️ {method.name}</Text>
-                                                                                                                                                          </TouchableOpacity>
-                                                                                                                                                                ))
+                                 {payMenuVisible && (
+                                    <View style={[styles.payDropdown, { bottom: 50, right: 10, width: 140 }]}>
+                                        {isLoadingMethods ? (
+                                              // Display standard loading indicator while querying country rails
+                                                    <ActivityIndicator size="small" color="#ffffff" style={{ padding: 10 }} />
+                                                        ) : localPaymentMethods.length === 0 ? (
+                                                              // Emergency fallback component if list returns empty
+                                                                    <TouchableOpacity onPress={() => handleDonation("card", 50)}>
+                                                                            <Text style={styles.payOption}>Bank Card</Text>
+                                                                                  </TouchableOpacity>
+                                                                                      ) : (
+                                                                                            //  Loop through only the valid options returned by Paystack
+                                                                                                  localPaymentMethods.map((method) => (
+                                                                                                          <TouchableOpacity
+                                                                                                                    key={method.id}
+                                                                                                                              onPress={() => handleDonation(method.id, 50)} // Passes 'mpesa', 'card', or 'applepay'
+                                                                                                                                      >
+                                                                                                                                                <Text style={styles.payOption}>{method.name}</Text> 
+                                                                                                                                                        </TouchableOpacity>
+                                                                                                                                                              ))
+                                                                                                                                                                  )}
+                                                                                                                                                                    </View>
                                                                                                                                                                     )}
-                                                                                                                                                                      </View>
-                                                                                                                                                                      )}
+
+                                 
+                                      
+                                              
+                                                            
+                                                              
+                                                                      
+                                                                              
+                                                                                  
+                                                                            
+                                                                                          
+                                                                                                        
+                                                                                                              
+                                                                                                                      
+                                                                                                                                    
+                                                                                                                                        
+                                                                                                                                                  
+                                                                                                                                                        
+                                                                                                                                                            
+                                                                                                                                                                  
+                                                                                                                                                              
 
                                   
 
@@ -1540,44 +1562,83 @@ export default function FeedScreen() {
                                                                                           };
 
                                                                                             // --- Payment handlers ---
-                                                                                               // --- Payment handlers ---
-                                                                                                 const handleDonation = async (method: string, amount = 50) => {
+                                                                                             // --- Updated Payment Handlers for Paystack ---
+                                                                                             const handleDonation = async (method: string, amount = 50) => {
+                                                                                               try {
+                                                                                                   const streamerAmount = amount * (1 - PLATFORM_CUT);
+                                                                                                       const donorName = auth.currentUser?.displayName || "Anonymous";
+                                                                                                           const donorEmail = auth.currentUser?.email || "anonymous@realdapp.com"; // 👈 Paystack requires an email parameter
 
-                                                                                                         try {
-                                                                                                               const streamerAmount = amount * (1 - PLATFORM_CUT);
-                                                                                                                     const donorName = auth.currentUser?.displayName || "Anonymous";
+                                                                                                               // Call your updated Supabase edge function processor route
+                                                                                                                   const response = await fetch("https://jywoururkjaszyfrfqnd.supabase.co", {
+                                                                                                                         method: "POST",
+                                                                                                                               headers: {
+                                                                                                                                       "Content-Type": "application/json",
+                                                                                                                                             },
+                                                                                                                                                   body: JSON.stringify({
+                                                                                                                                                           amount: amount,
+                                                                                                                                                                   currency: "usd", // Paystack will convert this to local options dynamically
+                                                                                                                                                                           streamerId: streamerId,
+                                                                                                                                                                                   method: method,
+                                                                                                                                                                                           email: donorEmail // 👈 Inject the donor's email address safely
+                                                                                                                                                                                                 })
+                                                                                                                                                                                                     });
 
-                                                                                                                           // 🟩 PASTE THIS NEW CODE BLOCK HERE:
-                                                                                                                                 const response = await fetch("https://jywoururkjaszyfrfqnd.supabase.co", {
-                                                                                                                                         method: "POST",
-                                                                                                                                                 headers: {
-                                                                                                                                                           "Content-Type": "application/json",
-                                                                                                                                                                   },
-                                                                                                                                                                           body: JSON.stringify({
-                                                                                                                                                                                     amount: amount,
-                                                                                                                                                                                               currency: "usd",
-                                                                                                                                                                                                         streamerId: streamerId,
-                                                                                                                                                                                                                   method: method 
-                                                                                                                                                                                                                           })
-                                                                                                                                                                                                                                 });
+                                                                                                                                                                                                         const paymentResult = await response.json();
 
-                                                                                                                                                                                                                                       const paymentResult = await response.json();
+                                                                                                                                                                                                             if (!paymentResult.success || !paymentResult.checkoutUrl) {
+                                                                                                                                                                                                                   throw new Error(paymentResult.error || "Payment initialization failed.");
+                                                                                                                                                                                                                       }
 
-                                                                                                                                                                                                                                             if (!paymentResult.success) {
-                                                                                                                                                                                                                                                     throw new Error(paymentResult.error || "Payment processing failed");
-                                                                                                                                                                                                                                                           }
-                                                                                                                                                                                                                                                                 // 🟩 END OF PASTED BLOCK
+                                                                                                                                                                                                                           // 🚀 THE MAGIC STEP: Open the dynamic global check-out window instantly
+                                                                                                                                                                                                                               // Users in Kenya see M-Pesa; users in the US/UK see Card/Apple Pay!
+                                                                                                                                                                                                                                   await Linking.openURL(paymentResult.checkoutUrl);
 
-                                                                                                                                                                                                                                                                       setPopup(`${method} Payment Successful! Contributed $${streamerAmount}`);
-                                                                                                                                                                                                                                                                             setTimeout(() => setPopup(null), 6000);
+                                                                                                                                                                                                                                       // Optional: Keep your floating animation or display a message guiding them to the checkout
+                                                                                                                                                                                                                                           setPopup(`Opening secure checkout window...`);
+                                                                                                                                                                                                                                               setTimeout(() => setPopup(null), 6000);
 
-                                                                                                                                                                                                                                                                                   // Trigger the floating bubble element
-                                                                                                                                                                                                                                                                                         addFloatingDonation(streamerAmount, method, donorName);
+                                                                                                                                                                                                                                                 } catch (err: any) {
+                                                                                                                                                                                                                                                     Alert.alert("Payment Error", err.message);
+                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                       };
 
-                                                                                                                                                                                                                                                                                             } catch (err: any) {
-                                                                                                                                                                                                                                                                                                   Alert.alert("Error", err.message);
-                                                                                                                                                                                                                                                                                                       }
-                                                                                                                                                                                                                                                                                                         };
+
+                                                                                                    
+                                                                                                    
+                                                                                                        
+
+                                                                                                                  
+                                                                                                                        
+                                                                                                                                         
+                                                                                                                                          
+                                                                                                                                                    
+                                                                                                                                                                
+                                                                                                                                                                  
+                                                                                                                                                                                    
+                                                                                                                                                                                      
+                                                                                                                                                                                                  
+                                                                                                                                                                                                              
+                                                                                                                                                                                                                        
+                                                                                                                                                                                                                        
+
+                                                                                                                                                                                                                          
+
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                      
+
+                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                
+
+                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                              
+
+                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                
 
                                                                                         
                                                                                                 

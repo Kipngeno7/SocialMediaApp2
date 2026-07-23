@@ -1,6 +1,9 @@
-import { serve } from "https://deno.land"
+
+
 
 Deno.serve(async (req) => {
+
+
   // CORS Preflight Header Validation Handler
     if (req.method === 'OPTIONS') {
         return new Response('ok', {

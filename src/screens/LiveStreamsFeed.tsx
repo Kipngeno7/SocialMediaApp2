@@ -40,9 +40,10 @@ const CATEGORY_EMOJI: Record<string, string> = {
                                       LiveViewer: { streamId: string };
                                       };
 
-                                      export default function LiveStreamsFeed() {
+                                      
+                                        export default function LiveStreamsFeed({ navigation }: any) {
                                         // Pass the type definitions into useNavigation
-                                          const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+                                        //  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
                                             
                                               // Re-added the state variables to resolve the errors
                                                 const [streams, setStreams] = useState<Stream[]>([]);

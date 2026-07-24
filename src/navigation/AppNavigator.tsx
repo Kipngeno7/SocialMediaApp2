@@ -17,9 +17,13 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@rea
 
 
 import { TouchableOpacity } from 'react-native';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+
 
 import AuthScreen from '../screens/AuthScreen';
 import ChatScreen from '../screens/ChatScreen';
+import ChatsListScreen from '../screens/ChatsListScreen';
+
 import FeedScreen from '../screens/FeedScreen';
 import HelpCentreScreen from '../screens/HelpCentreScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -32,6 +36,8 @@ import SettingsScreen from '../screens/SettingsScreen';
 import StreamerDashboard from '../screens/StreamerDashboard';
 import TermsScreen from '../screens/TermsScreen';
 import TrendingScreen from '../screens/TrendingScreen';
+import MyWallet from '../screens/MyWallet';
+
 import { PostProvider } from '../context/PostContext';
 
 
@@ -49,51 +55,76 @@ import WatchLiveScreen from '../screens/WatchLiveScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+const TopTab = createMaterialTopTabNavigator();
+
+/* ---------------- Top Tabs ---------------- */
+function TopTabsGroup() {
+  return (
+      <TopTab.Navigator
+            screenOptions={{
+                    tabBarActiveTintColor: '#007AFF',
+                            tabBarInactiveTintColor: 'gray',
+                                    tabBarIndicatorStyle: { backgroundColor: '#007AFF' },
+                                            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textTransform: 'none' },
+                                                  }}
+                                                      >
+                                                            <TopTab.Screen name="Let's Talk Room" component={LetsTalkRoom} />
+                                                                  <TopTab.Screen name="Chat" component={ChatsListScreen} /> 
+                                                                  
+
+                                                                        <TopTab.Screen name="Live Stream" component={LiveStreamsFeed} />
+                                                                            </TopTab.Navigator>
+                                                                              );
+                                                                              }
 
 
 
 
 /* ---------------- Bottom Tabs ---------------- */
-
 function MainTabs({ navigation }: any) {
-  const headerLeftHamburger = () => (
-    <TouchableOpacity onPress={() => navigation.toggleDrawer?.()} style={{ marginLeft: 15 }}>
-      <Ionicons name="menu" size={28} color="black" />
-    </TouchableOpacity>
-  );
+    const headerLeftHamburger = () => (
+        <TouchableOpacity onPress={() => navigation.toggleDrawer?.()} style={{ marginLeft: 15 }}>
+              <Ionicons name="menu" size={28} color="black" />
+                  </TouchableOpacity>
+                    );
 
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: true,
-        headerTitleAlign: 'center',
-        headerLeft: headerLeftHamburger,
-        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
-          let iconName = '';
+                      return (
+                          <Tab.Navigator
+                                screenOptions={({ route }) => ({
+                                        headerShown: true,
+                                                headerTitleAlign: 'center',
+                                                        headerLeft: headerLeftHamburger,
+                                                                tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+                                                                          let iconName = '';
 
-          if (route.name === 'Home') iconName = 'home-outline';
-          else if (route.name === 'Create') iconName = 'add-circle-outline';
-          else if (route.name === 'Trending') iconName = 'trending-up-outline';
-          else if (route.name === 'Search') iconName = 'search-outline';
-          else if (route.name === 'Notifications') iconName = 'notifications-outline';
+                                                                                    if (route.name === 'Home') iconName = 'home-outline';
+                                                                                              else if (route.name === 'Create') iconName = 'add-circle-outline';
+                                                                                                        else if (route.name === 'Trending') iconName = 'trending-up-outline';
+                                                                                                                  else if (route.name === 'My Wallet') iconName = 'wallet-outline'; // <-- ICON FOR WALLET
+                                                                                                                            else if (route.name === 'Search') iconName = 'search-outline';
+                                                                                                                                      else if (route.name === 'Notifications') iconName = 'notifications-outline';
 
-          return <Ionicons name={iconName as any} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} />
+                                                                                                                                                return <Ionicons name={iconName as any} size={size} color={color} />;
+                                                                                                                                                        },
+                                                                                                                                                                tabBarActiveTintColor: '#007AFF',
+                                                                                                                                                                        tabBarInactiveTintColor: 'gray',
+                                                                                                                                                                              })}
+                                                                                                                                                                                  >
+                                                                                                                                                                                        {/* Changed component here to render your top screens on your default home tab */}
+                                                                                                                                                                                              <Tab.Screen name="Home" component={TopTabsGroup} options={{ headerTitle: "RealD" }} />
 
-      {/* CREATE TAB ADDED */}
-      <Tab.Screen name="Create" component={CreateScreen} />
+                                                                                                                                                                                                    <Tab.Screen name="Create" component={CreateScreen} />
+                                                                                                                                                                                                          <Tab.Screen name="Trending" component={TrendingScreen} />
+                                                                                                                                                                                                                
+                                                                                                                                                                                                                      {/* MY WALLET ADDED NEXT TO TRENDING */}
+                                                                                                                                                                                                                            <Tab.Screen name="My Wallet" component={MyWallet} />
 
-      <Tab.Screen name="Trending" component={TrendingScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} />
-    </Tab.Navigator>
-  );
-}
+                                                                                                                                                                                                                                  <Tab.Screen name="Search" component={SearchScreen} />
+                                                                                                                                                                                                                                        <Tab.Screen name="Notifications" component={NotificationsScreen} />
+                                                                                                                                                                                                                                            </Tab.Navigator>
+                                                                                                                                                                                                                                              );
+                                                                                                                                                                                                                                              }
+
 
 /* ---------------- Drawer ---------------- */
 

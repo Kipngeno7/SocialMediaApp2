@@ -501,9 +501,12 @@ const handleGoLive = async () => {
                             // 1. Grab current authenticated Firebase User ID dynamically
                               const userId = auth.currentUser?.uid || "1";
 
-                                // 2. Fetch the first uploaded image/video URL if it exists
-                                  const mainMediaUrl = uploadedImages.length > 0 ? uploadedImages[0] : 
-                                                         (uploadedVideos.length > 0 ? uploadedVideos[0] : null);
+            //  PERMANENT MULTI-MEDIA FIX
+            const mainMediaUrl = uploadedImages.length > 0 
+              ? uploadedImages.join(',') // 👈 Joins all uploaded image links together safely!
+                : (uploadedVideos.length > 0 ? uploadedVideos.join(',') : null);
+                  
+                                  
 
                                                            // 3. Insert data cleanly directly into your Supabase Database table
                                                              const { data: dbPost, error: supabaseError } = await supabase

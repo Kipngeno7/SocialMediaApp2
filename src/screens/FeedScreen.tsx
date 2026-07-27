@@ -47,6 +47,8 @@ import AnimatedReanimated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
+import {  Modal } from 'react-native';
+
 
 import CommentThread from "../../src/components/CommentThread";
 import AnimatedSpringConnector from "../../src/components/ElasticSpring";
@@ -526,6 +528,8 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   const [payMenuVisible, setPayMenuVisible] = useState(false);
   const [localPaymentMethods, setLocalPaymentMethods] = useState<any[]>([]);
   const [isLoadingMethods, setIsLoadingMethods] = useState<boolean>(false);
+const screenWidth = Dimensions.get('window').width;
+
 
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [liveSeconds, setLiveSeconds] = useState(0);
@@ -533,6 +537,11 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [commentsVisible, setCommentsVisible] = useState(true);
   const [comments, setComments] = useState(item?.comments || []);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [fullscreenVisible, setFullscreenVisible] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+
   const [replyText, setReplyText] = useState("");
   const [editing, setEditing] = useState(false);
   const [editedText, setEditedText] = useState(item?.text || "");
@@ -547,7 +556,20 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   const flatListRef = useRef<FlatList>(null);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
-  const isVideo = Array.isArray(item?.mediaUris) && item.mediaUris.length > 0 && String(item.mediaUris[0]).toLowerCase().endsWith(".mp4");
+  //  NEW ACCURATE MEDIA DETECTOR
+  // ─── SAFE MEDIA TYPE DISCRIMINATOR ───
+  const rawMediaString = Array.isArray(item.mediaUris) && item.mediaUris.length > 0 
+    ? String(item.mediaUris[0]).toLowerCase() 
+      : "";
+
+      const isVideo = rawMediaString.endsWith('.mp4') || 
+                      rawMediaString.endsWith('.mov') || 
+                                      rawMediaString.endsWith('.m3u8') || 
+                                                      rawMediaString.endsWith('.3gp') ||
+                                                                      rawMediaString.endsWith('.avi') ||
+                                                                                      rawMediaString.includes('video');
+
+
   
 
   const sortedComments = [...comments].sort(
@@ -610,22 +632,46 @@ const PostItem = React.memo(({ item, isActive, onWatchTime, handleDonation, addF
   }, [sortedComments]);
 
   // Watch time tracking
+  
   useEffect(() => {
     let interval: any;
-    if (isActive && isVideo) {
-      interval = setInterval(() => {
-        setWatchTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isActive]);
+      if (isActive && isVideo) {
+          interval = setInterval(() => {
+                setWatchTime((prev: any) => {
+                        const currentNum = typeof prev === 'object' ? 0 : Number(prev || 0);
+                                return currentNum + 1;
+                                      });
+                                          }, 1000);
+                                            }
+                                              return () => clearInterval(interval);
+                                              }, [isActive, isVideo]);
 
+
+  
   useEffect(() => {
-    if (watchTime > 3) {
-      onWatchTime?.(item.id, watchTime);
-      boostPostRanking?.(item.id, watchTime);
-    }
-  }, [watchTime]);
+    let interval: any;
+      if (isActive && isVideo) {
+          interval = setInterval(() => {
+                setWatchTime((prev: any) => {
+                        // Force the value to always be a safe number primitive
+                                const currentNum = typeof prev === 'object' ? 0 : Number(prev || 0);
+                                        return currentNum + 1;
+                                              });
+                                                  }, 1000);
+                                                    }
+                                                      return () => clearInterval(interval);
+                                                      }, [isActive, isVideo]);
+
+                                                      useEffect(() => {
+                                                        // Extract number primitive to protect parental state components
+                                                          const safeWatchTime = typeof watchTime === 'object' ? 0 : Number(watchTime || 0);
+                                                            
+                                                              if (safeWatchTime > 3) {
+                                                                  onWatchTime?.(item.id, safeWatchTime);
+                                                                      boostPostRanking?.(item.id, safeWatchTime);
+                                                                        }
+                                                                        }, [watchTime]);
+
 
   // Video play/pause based on active state
   useEffect(() => {
@@ -876,39 +922,181 @@ const handleSendReply = () => {
       </View>
 
       {/* Media + text area */}
-      <TouchableWithoutFeedback
-        onPress={handleDoubleTap}
-        onLongPress={handleLongPress}
-      >
+    <TouchableWithoutFeedback onPress={handleDoubleTap} onLongPress={handleLongPress}>
         <View style={{ flex: 1 }}>
-          {/* Video */}
+            
+                {/* 🎥 VIDEO LANE: Render only if explicitly flagged as video */}
                     {isVideo && item.mediaUris && item.mediaUris.length > 0 && (
-                                  <Video
-                                                ref={videoRef}
-                                                              source={{ uri: item.mediaUris[0] }} // 🔑 Fixed: Grab the first element from your data array
-                                                                            style={styles.fullScreenVideo}
-                                                                                          resizeMode={ResizeMode.COVER}
-                                                                                                        isLooping
-                                                                                                                      onPlaybackStatusUpdate={handleVideoPlaybackStatusUpdate}
-                                                                                                                                  />
-                                                                                                                                            )}
+                          <Video
+                                  ref={videoRef}
+                                          source={{ uri: item.mediaUris[0] }}
+                                                  style={styles.fullScreenVideo}
+                                                          resizeMode={ResizeMode.COVER}
+                                                                  isLooping
+                                                                          onPlaybackStatusUpdate={() => {}}
+                                                                                />
+                                                                                    )}
 
-                                                                                                                                                      {!isVideo && item.mediaUris && item.mediaUris.length > 0 && (
-                                                                                                                                                                  <FlatList
-                                                                                                                                                                                data={item.mediaUris}
-                                                                                                                                                                                              horizontal
-                                                                                                                                                                                                            pagingEnabled // 🔑 Snaps smoothly from image to image
-                                                                                                                                                                                                                          showsHorizontalScrollIndicator={false}
-                                                                                                                                                                                                                                        keyExtractor={(photoUrl, index) => index.toString()}
-                                                                                                                                                                                                                                                      renderItem={({ item: photoUrl }) => (
-                                                                                                                                                                                                                                                                      <Image
-                                                                                                                                                                                                                                                                                        source={{ uri: photoUrl }}
-                                                                                                                                                                                                                                                                                                          style={styles.fullScreenVideo} // Fills the container dimensions perfectly
-                                                                                                                                                                                                                                                                                                                            resizeMode="cover"
-                                                                                                                                                                                                                                                                                                                                            />
-                                                                                                                                                                                                                                                                                                                                                          )}
-                                                                                                                                                                                                                                                                                                                                                                      />
-                                                                                                                                                                                                                                                                                                                                                                                )}
+                                                                                        {/* 🖼️ IMAGE LANE: Render only if NOT a video */}
+                                                                                            {!isVideo && item.mediaUris && item.mediaUris.length > 0 && (() => {
+                                                                                             // ─── PERMANENT FIXED LAYOUT SPLITTER ───
+                                                                                             const splitUris = Array.isArray(item.mediaUris) 
+                                                                                               ? (item.mediaUris.length === 1 && typeof item.mediaUris[0] === 'string' && item.mediaUris[0].includes(',')
+                                                                                                     ? item.mediaUris[0].split(',') 
+                                                                                                           : item.mediaUris)
+                                                                                                             : (typeof item.mediaUris === 'string' ? item.mediaUris.split(',') : []);
+
+                                                                                                             const totalCount = splitUris.length;
+                                                                                                             const visibleImages = isExpanded ? splitUris : splitUris.slice(0, 4);
+
+                                                                                                              const remainingCount = totalCount - 4;
+
+                                                                                                                    return (
+                                                                                                                            <View style={styles.fbGridContainer}>
+                                                                                                                                      <View style={styles.fbGridRow}>
+                                                                                                                                                  {visibleImages.map((photoUrl: string, index: number) => {
+                                                                                                                                                                let itemStyle: any = styles.fbGridItem;
+                                                                                                                                                                              
+                                                                                                                                                                                            if (!isExpanded) {
+                                                                                                                                                                                                            if (totalCount === 1) itemStyle = styles.singleImageStyle;
+                                                                                                                                                                                                                            else if (totalCount === 2) itemStyle = styles.twoImagesStyle;
+                                                                                                                                                                                                                                            else if (totalCount === 3 && index === 0) itemStyle = styles.threeImagesMainStyle;
+                                                                                                                                                                                                                                                          }
+  //  IMAGE RESIZING TO FULL SCREEN
+  const isLastVisibleItem = !isExpanded && index === 3 && remainingCount > 0;
+
+  return (
+    <TouchableOpacity 
+        key={index} 
+            style={itemStyle}
+                activeOpacity={0.9}
+                    onPress={() => {
+                          if (isLastVisibleItem) {
+                                  setIsExpanded(true);
+                                        } else {
+                                                setSelectedImageIndex(index);
+                                                        setFullscreenVisible(true);
+                                                              }
+                                                                  }}
+                                                                    >
+                                                                        <Image 
+                                                                              source={{ uri: photoUrl }} 
+
+
+                    
+                                  
+                                                  
+                                                    
+                                                                                  
+                                                                                                      
+                                                                                                                              
+                                                                                                                      
+                                                                                                                    
+                                                                                                                                  style={styles.fbGridImage} 
+                                                                                                                                    resizeMode="contain" 
+                                                                                                                                    />
+
+                                                                                                                                                  
+                                                                                                                                                                                     
+                                                                                                                                                                                                      
+                                                                                                                                                                                                            
+
+                                                                                                                                                                                                                                                                   {isLastVisibleItem && (
+                                                                                                                                                                                                                                                                                       <View style={styles.fbGridOverlay}>
+                                                                                                                                                                                                                                                                                                             <Text style={styles.fbGridOverlayText}>
+                                                                                                                                                                                                                                                                                                                                     +{remainingCount} View more
+                                                                                                                                                                                                                                                                                                                                                           </Text>
+                                                                                                                                                                                                                                                                                                                                                                               </View>
+                                                                                                                                                                                                                                                                                                                                                                                                 )}
+                                                                                                                                                                                                                                                                                                                                                                                                                 </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                                                                                               );
+                                                                                                                                                                                                                                                                                                                                                                                                                                           })}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                     </View>
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                               {isExpanded && (
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                           <TouchableOpacity 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         style={styles.collapseButton} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       onPress={() => setIsExpanded(false)}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   >
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <Text style={styles.collapseButtonText}>Show Less</Text>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </TouchableOpacity>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       )}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               </View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         })()}                     
+                                                                
+                                                                                                      
+                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+            
+                    
+                  
+                            
+                                                  
+                                                    
+                                                              
+                                                                  
+                                                                                    
+                                                                                              
+
+                                                                                                
+
+                                                                                                                    
+                                                                                                                              
+                                                                                                                                              
+                                                                                                                                                        
+                                                                                                                                                                        
+                                                                                                                                                                                        
+                                                                                                                                                                                              
+                                                                                                                                                                                                                  
+                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+                                                                                                                                           
+                                                                                                                                                          
+                                                                                                                                                                
+                                                                                                                                                                                    
+                                                                                                                                                                                        
+                                                                                                                                                                                                          
+                                                                                                                                                                                                                              
+                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                
 
                     
 
@@ -916,11 +1104,13 @@ const handleSendReply = () => {
                                                         
 
         {/* Post text words with high contrast display visibility rule */}
-        {!editing && (
+      {!editing && (
           <Text style={[styles.postText, { color: '#000', fontSize: 16, fontWeight: '500', paddingHorizontal: 15, marginVertical: 8 }]}>
-              {item?.text}
+              {typeof item?.text === 'object' ? String(JSON.stringify(item.text)) : (item?.text || "")}
                 </Text>
                 )}
+
+      
 
 
           {/* Edit mode */}
@@ -998,7 +1188,8 @@ const handleSendReply = () => {
           style={styles.iconButton}
             onPress={() => {
                 setLiked(!liked);
-                    setLikesCount(prev => liked ? prev - 1 : prev + 1);
+                   setLikesCount((prev: number) =>
+                   liked ? prev - 1 : prev + 1);
                         handleReact(item.id, "❤️");
                           }}
                           >
@@ -1185,9 +1376,9 @@ const handleSendReply = () => {
         {item?.isLive && (
           <Text style={styles.goLiveTimerText}>🔴 LIVE {liveSeconds}s</Text>
         )}
-        <Text style={{ color: "#fff", fontSize: 12, marginTop: 2 }}>
-          {watchTime}s watched
-        </Text>
+      <Text style={{ color: "#fff", fontSize: 12, marginTop: 2 }}>
+          {typeof watchTime === 'number' ? watchTime : 0} watched
+          </Text>
       </View>
 
       {/* Reaction buttons */}
@@ -1320,6 +1511,48 @@ const handleSendReply = () => {
                                                                                                                                                                      <Text style={{ color: "#fff", fontWeight: "bold" }}>Send</Text>
                                                                                                                                                                        </TouchableOpacity>
                                                                                                                                                                        </View>
+                                                                                                                                                                       <Modal
+                                                                                                                                                                           visible={fullscreenVisible}
+                                                                                                                                                                               transparent={false}
+                                                                                                                                                                                   animationType="fade"
+                                                                                                                                                                                       onRequestClose={() => setFullscreenVisible(false)}
+                                                                                                                                                                                         >
+                                                                                                                                                                                             <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
+                                                                                                                                                                                                   
+                                                                                                                                                                                                         {/* Floating top close window action */}
+                                                                                                                                                                                                               <TouchableOpacity 
+                                                                                                                                                                                                                       style={{ position: 'absolute', top: 50, right: 25, zIndex: 10, padding: 10 }}
+                                                                                                                                                                                                                               onPress={() => setFullscreenVisible(false)}
+                                                                                                                                                                                                                                     >
+                                                                                                                                                                                                                                             <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>✕ Close</Text>
+                                                                                                                                                                                                                                                   </TouchableOpacity>
+
+                                                                                                                                                                                                                                                         {/* Horizontal full-screen paging list reader */}
+                                                                                                                                                                                                                                                               <FlatList
+                                                                                                                                                                                                                                                                       data={item.mediaUris}
+                                                                                                                                                                                                                                                                               horizontal
+                                                                                                                                                                                                                                                                                       pagingEnabled
+                                                                                                                                                                                                                                                                                               initialScrollIndex={selectedImageIndex}
+                                                                                                                                                                                                                                                                                                       getItemLayout={(data, index) => ({
+                                                                                                                                                                                                                                                                                                                 length: screenWidth,
+                                                                                                                                                                                                                                                                                                                           offset: screenWidth * index,
+                                                                                                                                                                                                                                                                                                                                     index,
+                                                                                                                                                                                                                                                                                                                                             })}
+                                                                                                                                                                                                                                                                                                                                                     showsHorizontalScrollIndicator={false}
+                                                                                                                                                                                                                                                                                                                                                             keyExtractor={(url, index) => index.toString()}
+                                                                                                                                                                                                                                                                                                                                                                     renderItem={({ item: photoUrl }) => (
+                                                                                                                                                                                                                                                                                                                                                                               <View style={{ width: screenWidth, height: '100%', justifyContent: 'center', backgroundColor: '#000' }}>
+                                                                                                                                                                                                                                                                                                                                                                                           <Image 
+                                                                                                                                                                                                                                                                                                                                                                                                         source={{ uri: photoUrl }} 
+                                                                                                                                                                                                                                                                                                                                                                                                                       style={{ width: '100%', height: '75%' }} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                     resizeMode="contain" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                 />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           </View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                   )}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                         />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   </View>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     </Modal>
                                                                                                                                                                        
                                               
                                                       
@@ -1407,7 +1640,42 @@ export default function FeedScreen() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       },
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   text: post.content,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               category: post.category || "Others",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     mediaUris: post.mediaUrl ? [post.mediaUrl] : (post.media_url ? [post.media_url] : []),
+  //  NEW CLEAN MULTI-MEDIA MAPPING
+      mediaUris: (() => {
+              const rawUrl = post.mediaUrl || post.media_url;
+                    if (!rawUrl) return [];
+
+                          // 1. If it's already an array, check if any element contains commas
+                                if (Array.isArray(rawUrl)) {
+                                        if (rawUrl.length === 1 && typeof rawUrl[0] === 'string' && rawUrl[0].includes(',')) {
+                                                  return rawUrl[0].split(',').map(u => u.trim());
+                                                          }
+                                                                  return rawUrl;
+                                                                        }
+
+                                                                              // 2. If it's a JSON string array format (e.g. "['url1','url2']"), parse it
+                                                                                    if (typeof rawUrl === 'string' && (rawUrl.startsWith('[') || rawUrl.startsWith('{'))) {
+                                                                                            try {
+                                                                                                      const parsed = JSON.parse(rawUrl);
+                                                                                                                return Array.isArray(parsed) ? parsed : [parsed];
+                                                                                                                        } catch (e) {
+                                                                                                                                  // Fall through if parsing fails
+                                                                                                                                          }
+                                                                                                                                                }
+
+                                                                                                                                                      // 3. If it's a single string with commas, split it into separate links
+                                                                                                                                                            if (typeof rawUrl === 'string') {
+                                                                                                                                                                    return rawUrl.includes(',') 
+                                                                                                                                                                              ? rawUrl.split(',').map(u => u.trim()).filter(Boolean) 
+                                                                                                                                                                                        : [rawUrl];
+                                                                                                                                                                                              }
+
+                                                                                                                                                                                                    return [rawUrl];
+                                                                                                                                                                                                        })(),
+
+      
+            
+
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       audioUris: post.audio_urls || [],
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   hashtags: post.hashtags || "",
@@ -2320,6 +2588,74 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: "#ff0050",
   },
+    fbGridContainer: {
+          width: '78%',
+              padding: 2,
+                  backgroundColor: '#fff',
+                      alignSelf: 'stretch',
+                        },
+                          fbGridRow: {
+                              flexDirection: 'row',
+                                  flexWrap: 'wrap',
+                                      justifyContent: 'space-between',
+                                          width: '100%',
+                                            },
+
+    
+                                    fbGridItem: {
+                                        width: '49.5%',
+                                            height: 140,
+                                                marginBottom: 4,
+                                                    position: 'relative',
+                                                      },
+                                                        singleImageStyle: {
+                                                            width: '100%',
+                                                                height: 350,
+                                                                  },
+                                                                    twoImagesStyle: {
+                                                                        width: '49.5%',
+                                                                            height: 250,
+                                                                              },
+                                                                                threeImagesMainStyle: {
+                                                                                    width: '100%',
+                                                                                        height: 220,
+                                                                                            marginBottom: 4,
+                                                                                              },
+                                                                                                fbGridImage: {
+                                                                                                    width: '100%',
+                                                                                                        height: '100%',
+                                                                                                            borderRadius: 4,
+                                                                                                              },
+                                                                                                                fbGridOverlay: {
+                                                                                                                    position: 'absolute',
+                                                                                                                        top: 0,
+                                                                                                                            left: 0,
+                                                                                                                                right: 0,
+                                                                                                                                    bottom: 0,
+                                                                                                                                        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                                                                                                                            justifyContent: 'center',
+                                                                                                                                                alignItems: 'center',
+                                                                                                                                                    borderRadius: 4,
+                                                                                                                                                      },
+                                                                                                                                                        fbGridOverlayText: {
+                                                                                                                                                            color: '#fff',
+                                                                                                                                                                fontSize: 18,
+                                                                                                                                                                    fontWeight: 'bold',
+                                                                                                                                                                      },
+                                                                                                                                                                        collapseButton: {
+                                                                                                                                                                            width: '100%',
+                                                                                                                                                                                paddingVertical: 10,
+                                                                                                                                                                                    backgroundColor: '#222',
+                                                                                                                                                                                        borderRadius: 6,
+                                                                                                                                                                                            alignItems: 'center',
+                                                                                                                                                                                                marginTop: 4,
+                                                                                                                                                                                                  },
+                                                                                                                                                                                                    collapseButtonText: {
+                                                                                                                                                                                                        color: '#aaa',
+                                                                                                                                                                                                            fontWeight: '600',
+                                                                                                                                                                                                                fontSize: 14,
+                                                                                                                                                                                                                  },
+  
 });
 
 

@@ -52,6 +52,10 @@ import AnimatedReanimated, {
 import {  Modal,KeyboardAvoidingView } from 'react-native';
 
 
+
+
+
+
 import CommentThread from "../../src/components/CommentThread";
 import AnimatedSpringConnector from "../../src/components/ElasticSpring";
 
@@ -78,6 +82,45 @@ const formatCommentCount = (count: number | undefined | null): string => {
                     }
                       return count.toString();
                       };
+                const formatSocialCounter = (num: number): string => {
+                    if (!num || isNaN(num)) return "0";
+                      if (num >= 1000000) {
+                          return (num / 1000000) % 1 === 0 ? `${(num / 1000000).toFixed(0)}m` : `${(num / 1000000).toFixed(1)}m`;
+                            }
+                              if (num >= 1000) {
+                                  return (num / 1000) % 1 === 0 ? `${(num / 1000).toFixed(0)}k` : `${(num / 1000).toFixed(1)}k`;
+                                    }
+                                      return num.toString();
+                                      };
+                                const getRelativePostTimestamp = (timeInput: string | number): string => {
+                                    if (!timeInput) return "now";
+                                      const postDate = new Date(timeInput);
+                                        const diffInSecs = Math.floor((Date.now() - postDate.getTime()) / 1000);
+
+                                          if (diffInSecs < 60) return "now";
+                                            
+                                              const mins = Math.floor(diffInSecs / 60);
+                                                if (mins < 60) return `${mins} mins`;
+                                                  
+                                                    const hours = Math.floor(mins / 60);
+                                                      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''}`;
+                                                        
+                                                          const days = Math.floor(hours / 24);
+                                                            if (days < 7) return `${days} day${days > 1 ? 's' : ''}`;
+                                                              
+                                                                const weeks = Math.floor(days / 7);
+                                                                  if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''}`;
+                                                                    
+                                                                      const months = Math.floor(days / 30);
+                                                                        if (months < 12) return `${months} month${months > 1 ? 's' : ''}`;
+                                                                          
+                                                                            const years = Math.floor(months / 12);
+                                                                              return `${years} year${years > 1 ? 's' : ''}`;
+                                                                              };
+
+                                    
+
+                    
 
 
 
@@ -572,16 +615,54 @@ const screenWidth = Dimensions.get('window').width;
   // ── Derived ──────────────────────────────────────────────────────────────────
   //  NEW ACCURATE MEDIA DETECTOR
   // ─── SAFE MEDIA TYPE DISCRIMINATOR ───
-  const rawMediaString = Array.isArray(item.mediaUris) && item.mediaUris.length > 0 
-    ? String(item.mediaUris[0]).toLowerCase() 
-      : "";
+const safeMediaUris = (() => {
+    if (!item.mediaUris) return [];
+      if (Array.isArray(item.mediaUris)) return item.mediaUris;
+        if (typeof item.mediaUris === 'string') {
+            const trimmed = item.mediaUris.trim();
+                if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                      try { return JSON.parse(trimmed); } catch(e) { console.log(e); }
+                          }
+                              return trimmed.split(',').map((u: string) => u.trim()).filter(Boolean);
+                                }
+                                  return [];
+                                  })();
 
-      const isVideo = rawMediaString.endsWith('.mp4') || 
-                      rawMediaString.endsWith('.mov') || 
-                                      rawMediaString.endsWith('.m3u8') || 
-                                                      rawMediaString.endsWith('.3gp') ||
-                                                                      rawMediaString.endsWith('.avi') ||
-                                                                                      rawMediaString.includes('video');
+                                  // Extracted primary single file string url track
+                                  const primaryMediaUrl = safeMediaUris.length > 0 ? String(safeMediaUris[0]).trim() : "";
+
+                                  const isVideo = typeof primaryMediaUrl === 'string' && (
+                                    primaryMediaUrl.toLowerCase().endsWith('.mp4') ||
+                                      primaryMediaUrl.toLowerCase().endsWith('.mov') ||
+                                        primaryMediaUrl.toLowerCase().endsWith('.m3u8') ||
+                                          primaryMediaUrl.toLowerCase().endsWith('.3gp') ||
+                                            primaryMediaUrl.toLowerCase().endsWith('.avi') ||
+                                              primaryMediaUrl.toLowerCase().includes('video')
+                                              );
+
+
+
+      
+
+  
+        
+            
+                          
+                    
+                                
+                          
+                            
+
+                          
+
+                        
+                                        
+                                                        
+                                                                        
+                                                                            
+                                                                                              
+
+
 
 
   
@@ -808,50 +889,82 @@ const screenWidth = Dimensions.get('window').width;
     return `${baseDirectory}${filename}`;
   };
 
-  const handleDownload = async () => {
-    if (!item?.mediaUris?.[0]) return;
+const handleDownload = async () => {
     try {
-      const uri = item.mediaUris[0];
-      const fileUri = getLocalFileUri(uri);
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                  Alert.alert("Storage Permission Required", "We need storage access permissions to download this post asset.");
+                        return;
+                            }
 
-      const { exists } = await FileSystem.getInfoAsync(fileUri);
-      if (!exists) {
-        const downloaded = await FileSystem.downloadAsync(uri, fileUri);
-        await MediaLibrary.createAssetAsync(downloaded.uri);
-        Alert.alert("Downloaded", "Media saved to gallery!");
-      } else {
-        Alert.alert("Already exists", "Media already downloaded.");
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to download media.");
-    }
-  };
+                                // Matches your exact data field array mapping
+                                    const mediaUrl = Array.isArray(item.mediaUris) ? item.mediaUris[0] : item.mediaUris;
+                                        if (!mediaUrl) {
+                                              Alert.alert("Unavailable", "No downloadable media was discovered on this post card.");
+                                                    return;
+                                                        }
+
+                                                            const fileExt = isVideo ? '.mp4' : '.jpg';
+                                                            const baseDir = (FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory ?? '';
+                                                            const localUri = baseDir + "download_" + Date.now() + fileExt;
+                                                                
+
+                                                                    Alert.alert("Downloading", "Saving media file to storage gallery rolls...");
+                                                                        
+                                                                            // Fixed: This removes the deprecated getInfoAsync call entirely
+                                                                                const result = await FileSystem.downloadAsync(mediaUrl, localUri);
+
+                                                                                    if (result.status === 200) {
+                                                                                          await MediaLibrary.createAssetAsync(result.uri);
+                                                                                                Alert.alert("Success", "Media saved directly to your phone storage gallery!");
+                                                                                                    } else {
+                                                                                                          throw new Error(`Media download stream terminated with status code: ${result.status}`);
+                                                                                                              }
+                                                                                                                } catch (err: any) {
+                                                                                                                    console.error("Download Error log trace details:", err);
+                                                                                                                        Alert.alert("Download Interrupted", err.message || "An issue occurred while writing file system buffer streams.");
+                                                                                                                          }
+                                                                                                                          };
+
+
 
   const handleShare = async () => {
-    if (!item?.mediaUris?.[0]) return;
-    try {
-      const uri = item.mediaUris[0];
-      const fileUri = getLocalFileUri(uri);
+      try {
+          // 1. Internal App Sharing log indicator
+              console.log(`Processing Internal share action for item: ${item.id}`);
 
-      const { exists } = await FileSystem.getInfoAsync(fileUri);
-      let shareUri = fileUri;
+                  // Matches your exact code data field array mapping
+                      const mediaUrl = Array.isArray(item.mediaUris) ? item.mediaUris[0] : item.mediaUris;
+                          
+                              // Fallback share behavior for text-only posts
+                                  if (!mediaUrl) {
+                                        if (await Sharing.isAvailableAsync()) {
+                                                Alert.alert("Share Content", item.text || "Check out this app post!");
+                                                        return;
+                                                              }
+                                                                  }
 
-      if (!exists) {
-        const downloaded = await FileSystem.downloadAsync(uri, fileUri);
-        shareUri = downloaded.uri;
-      }
+                                                                      // 2. Download asset data locally first to hand off to mobile share sheets
+                                                                          const fileExt = isVideo ? '.mp4' : '.jpg';
+                                                                              const cacheBase = (FileSystem as any).cacheDirectory ?? (FileSystem as any).documentDirectory ?? '';
+                                                                              const tempCachePath = `${cacheBase}share_${Date.now()}${fileExt}`;
+                                                                                  
+                                                                                      const result = await FileSystem.downloadAsync(mediaUrl, tempCachePath);
+                                                                                          
+                                                                                              if (result.uri && (await Sharing.isAvailableAsync())) {
+                                                                                                    await Sharing.shareAsync(result.uri, {
+                                                                                                            dialogTitle: `Share post from ${item.user?.name || 'User'}`,
+                                                                                                                    mimeType: isVideo ? 'video/mp4' : 'image/jpeg'
+                                                                                                                          });
+                                                                                                                              } else {
+                                                                                                                                    Alert.alert("Unsupported System", "Native sharing channels are not available on this device environment.");
+                                                                                                                                        }
+                                                                                                                                          } catch (err) {
+                                                                                                                                              console.error("Sharing handler error logging detail context:", err);
+                                                                                                                                                }
+                                                                                                                                                };
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(shareUri, { dialogTitle: "Share this post" });
-      } else {
-        Alert.alert("Sharing not available on this device");
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to share media.");
-    }
-  };
+  
 
 const handleSendReply = (replyMessage?: string) => {
     const message = (replyMessage ?? replyText).trim();
@@ -952,14 +1065,23 @@ const handleSendReply = (replyMessage?: string) => {
             flexWrap: "wrap",
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
-              <Text style={{ fontWeight: "bold", fontSize: 14, color: "#000" }}>
-                  {item.user?.name ?? "Unknown"}:{" "}
-                    </Text>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#333" }}>
-                          {renderCategoryBadge(item)}
-                            </Text>
-                            </View>
+                  {/* Re-arranged layout structure to allow name and time to stack vertically */}
+                            <View style={{ paddingHorizontal: 4, flexDirection: 'column' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                      <Text style={{ fontWeight: "bold", fontSize: 14, color: "#000" }}>
+                                                                      {item.user?.name ?? "Unknown"}:{" "}
+                                                                                    </Text>
+                                                                                                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#333" }}>
+                                                                                                                  {renderCategoryBadge(item)}
+                                                                                                                                </Text>
+                                                                                                                                            </View>
+                                                                                                                                                        
+                                                                                                                                                                    {/* Surgical Insert: Your dynamic relative timestamp element directly underneath */}
+                                                                                                                                                                                <Text style={{ fontSize: 11, color: "#888", marginTop: 2, fontWeight: "400" }}>
+                                                                                                                                                                                              {getRelativePostTimestamp(item.created_at || item.timestamp)}
+                                                                                                                                                                                                          </Text>
+                                                                                                                                                                                                                    </View>
+
 
 
           {/* Category badge */}
@@ -989,30 +1111,89 @@ const handleSendReply = (replyMessage?: string) => {
         <View style={{ flex: 1 }}>
             
                 {/* 🎥 VIDEO LANE: Render only if explicitly flagged as video */}
-                    {isVideo && item.mediaUris && item.mediaUris.length > 0 && (
-                          <Video
-                                  ref={videoRef}
-                                          source={{ uri: item.mediaUris[0] }}
-                                                  style={styles.fullScreenVideo}
-                                                          resizeMode={ResizeMode.COVER}
-                                                                  isLooping
-                                                                          onPlaybackStatusUpdate={() => {}}
-                                                                                />
-                                                                                    )}
+                   {isVideo && safeMediaUris.length > 0 && (
+
+                   
+                          
+                             <TouchableWithoutFeedback
+                                   onPress={async () => {
+                                           if (videoRef.current) {
+                                                     const status = await videoRef.current.getStatusAsync();
+                                                               if (status.isLoaded) {
+                                                                           if (status.isPlaying) {
+                                                                                         await videoRef.current.pauseAsync();
+                                                                                                     } else {
+                                                                                                                   await videoRef.current.playAsync();
+                                                                                                                               }
+                                                                                                                                         }
+                                                                                                                                                 }
+                                                                                                                                                       }}
+                                                                                                                                                           >
+                                                                                                                                                                 <Video
+                                                                                                                                                                         ref={videoRef}
+                                                                                                                                                                               source={{ uri: primaryMediaUrl }}
+                                                                                                                                                                                 
+                                                                                                                                                                                         style={styles.fullScreenVideo}
+                                                                                                                                                                                                 resizeMode={ResizeMode.COVER}
+                                                                                                                                                                                                         isLooping
+                                                                                                                                                                                                                 onPlaybackStatusUpdate={() => {}}
+                                                                                                                                                                                                                       />
+                                                                                                                                                                                                                           </TouchableWithoutFeedback>
+                                                                                                                                                                                                                           )}
+
+                                    
+                                                  
+                                                
+                                                                
+                                                                
+                                                                                    
 
                                                                                         {/* 🖼️ IMAGE LANE: Render only if NOT a video */}
-                                                                                            {!isVideo && item.mediaUris && item.mediaUris.length > 0 && (() => {
-                                                                                             // ─── PERMANENT FIXED LAYOUT SPLITTER ───
-                                                                                             const splitUris = Array.isArray(item.mediaUris) 
-                                                                                               ? (item.mediaUris.length === 1 && typeof item.mediaUris[0] === 'string' && item.mediaUris[0].includes(',')
-                                                                                                     ? item.mediaUris[0].split(',') 
-                                                                                                           : item.mediaUris)
-                                                                                                             : (typeof item.mediaUris === 'string' ? item.mediaUris.split(',') : []);
+                                                                                           {(() => {
+                                                                                           // Robust multi-format array parser
+                                                                                           const splitUris = (() => {
+                                                                                            if (!item.mediaUris) return [];
+                                                                                            if (Array.isArray(item.mediaUris)) return item.mediaUris;
+                                                                                            if (typeof item.mediaUris === 'string') {
+                                                                                            const trimmed = item.mediaUris.trim();
+                                                                                            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                                                                                            try { return JSON.parse(trimmed); } catch(e) { console.log(e); }
+                                                                                            }
+                                                                                            return trimmed.split(',').map((u:string )=> u.trim()).filter(Boolean);
+                                                                                            }
+                                                                                            return [];
+                                                                                            })();
+                                                                                            const totalCount = splitUris.length;
+                                                                                            const visibleImages = isExpanded ? splitUris : splitUris.slice(0, 4);
+                                                                                            const remainingCount = totalCount - 4;
 
-                                                                                                             const totalCount = splitUris.length;
-                                                                                                             const visibleImages = isExpanded ? splitUris : splitUris.slice(0, 4);
+                                                                                           
+                                                                                            
+                                                                                            
+                                                                                        
+                                                                                                     
+                                                                                                      
+                                                                                                      
+                                                                                                                   
+                                                                                                          
+                                                                                                                         
+                                                                                                                        
+                                                                                                                    
 
-                                                                                                              const remainingCount = totalCount - 4;
+                                                                                                                        
+                                                                                                                  
+                                                                                                                           
+                                                                                             
+                                                                                          
+                                                                                        
+                                                                                        
+                                                                                                  
+                                                                                                            
+
+                                                                                                      
+                                                                                                    
+
+                                                                                                  
 
                                                                                                                return !isExpanded ? (
                                                                                                                   <View 
@@ -1438,7 +1619,9 @@ const handleSendReply = (replyMessage?: string) => {
                           }}
                           >
                             <Text style={styles.iconText}>{liked ? "❤️" : "🤍"}</Text>
-                              <Text style={[styles.countText, { color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowRadius: 2 }]}>{likesCount}</Text>
+                              <Text style={[styles.countText, { color: '#000', fontWeight: 'bold', textShadowColor: '#fff', textShadowRadius: 2 }]}>
+                                {formatSocialCounter(likesCount)}
+                                  </Text>
                               </TouchableOpacity>
 
 
@@ -1662,21 +1845,27 @@ const handleSendReply = (replyMessage?: string) => {
             >
               <Text style={{ fontSize: 18, marginRight: 4 }}>{emoji}</Text>
               {count > 0 && (
-                <Text style={{ fontSize: 14 }}>{count}</Text>
+                <Text style={{ fontSize: 14 }}>{formatSocialCounter(count)}</Text>
+
               )}
             </TouchableOpacity>
           );
         })}
       </View>
-      {/* Active reactions summary */}
-      {Object.values(postReactions[item.id] || {}).some((v) => v > 0) && (
-        <Text style={{ marginTop: 4, fontSize: 14, color: "#555" }}>
+    {/* Active reactions summary */}
+    {Object.values(postReactions[item.id] || {}).some((v) => v > 0) && (
+      <Text style={{ marginTop: 4, fontSize: 14, color: "#555" }}>
           {Object.entries(postReactions[item.id] || {})
-            .filter(([, v]) => v > 0)
-            .map(([emoji]) => emoji)
-            .join(" ")}
-        </Text>
-      )}
+                .filter(([_, v]) => v > 0)
+                      .map(([emoji]) => emoji)
+                            .join(" ")}
+                                {/* Surgical Add: This adds a space and the formatted total counter next to the emojis */}
+                                    {"  " + formatSocialCounter(
+                                          Object.values(postReactions[item.id] || {}).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0)
+                                              )}
+                                                </Text>
+                                                )}
+
 
       {/* Comments section */}
           {/* 💬 Clean Action Bar Counter Only */}
@@ -2725,9 +2914,16 @@ export default function FeedScreen() {
                                                                                                                                                                                                                                                                                                                                                               <View style={styles.modalHeader}>
                                                                                                                                                                                                                                                                                                                                                                       <TouchableOpacity 
                                                                                                                                                                                                                                                                                                                                                                                 style={styles.floatingBackButton}
-                                                                                                                                                                                                                                                                                                                                                                                          onPress={() => {
-                                                                                                                                                                                                                                                                                                                                                                                            (false);
-                                                                                                                                                                                                                                                                                                                                                                                              setActiveCommentPost(null);
+                                                                                                                                                                                                                                                                                                                                                                                         onPress={() => {
+                                                                                                                                                                                                                                                                                                                                                                                            // Fix: Correctly close the modal visibility sheet state
+                                                                                                                                                                                                                                                                                                                                                                                              setIsCommentModalVisible(false);
+                                                                                                                                                                                                                                                                                                                                                                                                // Reset the active comment post reference
+                                                                                                                                                                                                                                                                                                                                                                                                  setActiveCommentPost(null);
+                                                                                                                                                                                                                                                                                                                                                                                                  
+
+                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                              
 
                                                                                                                                                                                                                                                                                                                                                                                                 // Forcefully update the main feed posts list with the new comments
                                                                                                                                                                                                                                                                                                                                                                                                         if (activeCommentPost) {
@@ -3739,6 +3935,27 @@ modalOverlay: {
     alignItems: 'center',
     borderRadius: 4,
   },
+    timestampText: {
+          fontSize: 11,
+              color: "#888888",
+                  marginTop: 2,
+                      fontWeight: "400",
+                        },
+                          actionText: {
+                              color: "#ffffff",
+                                  fontSize: 12,
+                                      fontWeight: "bold",
+                                          textAlign: "center",
+                                              marginTop: 4,
+                                                },
+                                                  reactionSummaryText: {
+                                                      color: "#666666",
+                                                          fontSize: 12,
+                                                              marginLeft: 6,
+                                                                  fontWeight: "500",
+                                                                    },
+
+    
   fbGridOverlayText: {
     color: '#fff',
     fontSize: 18,

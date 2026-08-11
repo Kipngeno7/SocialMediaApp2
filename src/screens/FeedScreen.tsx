@@ -1,4 +1,4 @@
-// src/screens/FeedScreen.tsx
+
 
 // Combined & cleaned: feed.tsx + FeedScreen.tsx
 
@@ -124,7 +124,7 @@ const formatCommentCount = (count: number | undefined | null): string => {
 
 
 
-// ── [FEATURE 5] TikTok-style: each card takes full screen height ──────────────
+
 const ITEM_HEIGHT = height;
 
 const REACTIONS = ["❤️", "🥺", "😎", "🔥", "👍", "👏", "😌", "😭", "😆", "🥱"];
@@ -603,7 +603,7 @@ const screenWidth = Dimensions.get('window').width;
   const [editing, setEditing] = useState(false);
   const [editedText, setEditedText] = useState(item?.text || "");
 
-  // ── [FEATURE 5] Video completion tracking for TikTok-style scrolling ─────────
+  // ── [FEATURE 5] Video completion tracking for  scrolling
   const [videoProgress, setVideoProgress] = useState(0);
 
   // ── Refs ─────────────────────────────────────────────────────────────────────
@@ -615,30 +615,230 @@ const screenWidth = Dimensions.get('window').width;
   // ── Derived ──────────────────────────────────────────────────────────────────
   //  NEW ACCURATE MEDIA DETECTOR
   // ─── SAFE MEDIA TYPE DISCRIMINATOR ───
-const safeMediaUris = (() => {
-    if (!item.mediaUris) return [];
-      if (Array.isArray(item.mediaUris)) return item.mediaUris;
-        if (typeof item.mediaUris === 'string') {
-            const trimmed = item.mediaUris.trim();
-                if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                      try { return JSON.parse(trimmed); } catch(e) { console.log(e); }
-                          }
-                              return trimmed.split(',').map((u: string) => u.trim()).filter(Boolean);
-                                }
-                                  return [];
-                                  })();
+  // Safely extract the full array of media URIs
+      // 1. Always guarantee an actual array for multi-image grids to map over
+           // 1. BULLETPROOF PARSER: Handles single URLs, JSON arrays, and Postgres curly-brace strings
+               // 1. Force extraction of a clean array of URLs from whatever Supabase provides
+                 // ——— Safe extraction mapping
+                   const safeMediaUris = (() => {
+                       if (!item || !item.mediaUris) return [];
+                           if (Array.isArray(item.mediaUris)) return item.mediaUris;
+                               if (typeof item.mediaUris === 'string') {
+                                     let trimmed = item.mediaUris.trim();
 
-                                  // Extracted primary single file string url track
-                                  const primaryMediaUrl = safeMediaUris.length > 0 ? String(safeMediaUris[0]).trim() : "";
+                                                 // Clear out raw Postgres array characters
+                                                       if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                                                               trimmed = trimmed.substring(1, trimmed.length - 1);
+                                                                       return trimmed.split(',').map((u: string) => u.replace(/["']/g, '').trim()).filter(Boolean);
+                                                                             }
 
-                                  const isVideo = typeof primaryMediaUrl === 'string' && (
-                                    primaryMediaUrl.toLowerCase().endsWith('.mp4') ||
-                                      primaryMediaUrl.toLowerCase().endsWith('.mov') ||
-                                        primaryMediaUrl.toLowerCase().endsWith('.m3u8') ||
-                                          primaryMediaUrl.toLowerCase().endsWith('.3gp') ||
-                                            primaryMediaUrl.toLowerCase().endsWith('.avi') ||
-                                              primaryMediaUrl.toLowerCase().includes('video')
-                                              );
+                                                                                         // Clear out raw JSON array string text lines
+                                                                                               if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                                                                                                       try {
+                                                                                                                 const parsed = JSON.parse(trimmed);
+                                                                                                                           return Array.isArray(parsed) ? parsed : [parsed];
+                                                                                                                                   } catch {
+                                                                                                                                             // JSON block parsing safe fallback
+                                                                                                                                                     }
+                                                                                                                                                           }
+
+                                                                                                                                                                       return trimmed.split(',').map((u: string) => u.trim()).filter(Boolean);
+                                                                                                                                                                           }
+                                                                                                                                                                               return [];
+                                                                                                                                                                                 })();
+
+                                                                                                                                                                                   // Extract a single clean fallback target string out of index 0
+                                                                                                                                                                                     const primaryMediaUrl = safeMediaUris.length > 0 ? String(safeMediaUris[0]).replace(/[\[\]\{\}\"\']/g, '').trim() : '';
+
+                                                                                                                                                                                       // Safe runtime evaluation flag for expo video configuration layouts
+                                                                                                                                                                                         const isVideo = typeof primaryMediaUrl === 'string' && primaryMediaUrl !== '' && 
+                                                                                                                                                                                             (/\.(mp4|mov|m4v|3gp|webm|avi|mkv|m3u8)/i.test(primaryMediaUrl) || primaryMediaUrl.toLowerCase().includes('video'));
+
+            
+                         
+                          
+                        
+                              
+                                           
+                                               
+                                        
+                                                
+                                                               
+                                                                
+                                                                      
+                                                                          
+                                                                                    
+                                                                                                 
+                                                                                                       
+                                                                                                    
+                                                                                                          
+                                                                                                                  
+                                                                                                                            
+                                                                                                                                            
+                                                                                                                                                    
+                                                                                                                                                                     
+                                                                                                                                                                      
+                                                                                                                                                                              
+                                                                                                                                                                                                 
+                                                                                                                                                                                                    
+                                                                                                                                                                                                               
+                                                                                                                                                                                                                     
+                                                                                                                                                                                                                
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                     
+                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                    
+
+                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                        
+
+                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                            
+
+                
+                  
+                
+                    
+
+                                        
+                                      
+                                            
+                                                                
+                                                                      
+
+                                                                                   
+                                                                                    
+                                                                                        
+                                                                                                    
+                                                                                                              
+                                                                                                                    
+                                                                                                                              
+                                                                                                                                               
+                                                                                                                                                  
+
+                                                                                                                                                  
+                                                                                                                                                              
+                                                                                                                                                                           
+                                                                                                                                                                              
+                                                                                                                                                            
+
+                                                                                                                                                                              
+                                                                                                                                                                  
+
+                                                                                                                                                                                
+                                                                                                                                                                              
+                                                                                                                                                                                
+
+            
+                    
+                  
+                        
+                            
+                                            
+                                              
+                                                        
+                                                                      
+                                                                          
+                                                                                          
+                                                                                                
+                                                                                        
+                                                                                                          
+                                                                                                          
+                                                                                                          
+
+                                                                                                      
+                                                                                                          
+
+                                                                                                           
+                                                                                                                  
+
+          
+    
+          
+            
+                  
+                      
+                                    
+                                  
+                                                      
+                                                                
+                                                              
+                                                                                      
+                                                                                            
+                                                                                        
+                                                                                                      
+                                                                                                    
+                                                                                                            
+
+                                                                                                  
+                                                                                                  
+
+                                                                                                          
+                                                                                                            
+                                                                                                                
+
+          
+              
+              
+                          
+                          
+                                                      
+                                                                       
+                                                                           
+                                                                                                
+                                                                                                          
+                                                                                                          
+
+                                                                                                              
+                                                                                                              
+                                                                                                                
+                                                                                                                        
+
+
+                                                                                                                   
+                                                                                                                    
+
+  
+          
+            
+                          
+                                      
+                                                  
+                                                                
+                                                                            
+                                                                                        
+                                                                                                          
+                                                                                                                  
+                                                                                                                              
+
+                                                                                                                          
+                                                                                                                                
+
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+
+
+                
+              
+                          
+                            
+                                
+                                
+                          
+
+                            
+                        
+
+                          
+                        
+                          
+                                
+                                
+                                  
+                                    
+                                            
 
 
 
@@ -770,10 +970,18 @@ const safeMediaUris = (() => {
 
   // Video play/pause based on active state
   useEffect(() => {
-    if (videoRef.current) {
-      if (isActive) videoRef.current.playAsync();
-      else videoRef.current.pauseAsync();
-    }
+    if (videoRef.current && isVideo) {
+        if (isActive) {
+            // Catch asynchronous interruptions native to web view rendering components
+                videoRef.current.playAsync().catch((err: any) => {
+                      console.log("Video playback safely deferred:", err.message);
+                          });
+                            } else {
+                                videoRef.current.pauseAsync().catch(() => {});
+                                  }
+                                  }
+
+    
   }, [isActive]);
   const handleTogglePayMenu = async () => {
       if (payMenuVisible) {
@@ -1105,6 +1313,12 @@ const handleSendReply = (replyMessage?: string) => {
           </View>
         </View>
       </View>
+      {/* Post text words with high contrast display visibility rule */}
+            {!editing && (
+                      <Text style={[styles.postText, { color: '#000', fontSize: 16, fontWeight: '500', paddingHorizontal: 15, marginVertical: 8 }]}>
+                                    {typeof item?.text === 'object' ? String(JSON.stringify(item.text)) : (item?.text || "")}
+                                                    </Text>
+                                                              )}
 
       {/* Media + text area */}
     <TouchableWithoutFeedback onPress={handleDoubleTap} onLongPress={handleLongPress}>
@@ -1116,18 +1330,41 @@ const handleSendReply = (replyMessage?: string) => {
                    
                           
                              <TouchableWithoutFeedback
-                                   onPress={async () => {
-                                           if (videoRef.current) {
-                                                     const status = await videoRef.current.getStatusAsync();
-                                                               if (status.isLoaded) {
-                                                                           if (status.isPlaying) {
-                                                                                         await videoRef.current.pauseAsync();
-                                                                                                     } else {
-                                                                                                                   await videoRef.current.playAsync();
-                                                                                                                               }
-                                                                                                                                         }
-                                                                                                                                                 }
-                                                                                                                                                       }}
+                             onPress={async () => {
+                                // Only trigger video playback actions if it is explicitly a video post
+                                  if (isVideo && videoRef.current && typeof videoRef.current.getStatusAsync === 'function') {
+                                      try {
+                                            const status = await videoRef.current.getStatusAsync();
+                                                  if (status && 'isPlaying' in status) {
+                                                          if (status.isPlaying) {
+                                                                    await videoRef.current.pauseAsync();
+                                                                            } else {
+                                                                                      await videoRef.current.playAsync();
+                                                                                              }
+                                                                                                    }
+                                                                                                        } catch (videoError) {
+                                                                                                              console.log("Guarded video interaction check deferred:", videoError);
+                                                                                                                  }
+                                                                                                                    } else if (!isVideo) {
+                                                                                                                        // Treat as a photo post action: open the full screen image modal view
+                                                                                                                            if (typeof handleDoubleTap === 'function') {
+                                                                                                                                  handleDoubleTap(); 
+                                                                                                                                      }
+                                                                                                                                        }
+                                                                                                                                        }}
+
+                                 
+                                  
+                                        
+                                                               
+                                                                        
+                                                                                        
+                                                                                          
+                                                                                                        
+                                                                                                                               
+                                                                                                                                        
+                                                                                                                                              
+                                                                                                                                                  
                                                                                                                                                            >
                                                                                                                                                                  <Video
                                                                                                                                                                          ref={videoRef}
@@ -1151,21 +1388,25 @@ const handleSendReply = (replyMessage?: string) => {
                                                                                         {/* 🖼️ IMAGE LANE: Render only if NOT a video */}
                                                                                            {(() => {
                                                                                            // Robust multi-format array parser
-                                                                                           const splitUris = (() => {
-                                                                                            if (!item.mediaUris) return [];
-                                                                                            if (Array.isArray(item.mediaUris)) return item.mediaUris;
-                                                                                            if (typeof item.mediaUris === 'string') {
-                                                                                            const trimmed = item.mediaUris.trim();
-                                                                                            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                                                                                            try { return JSON.parse(trimmed); } catch(e) { console.log(e); }
-                                                                                            }
-                                                                                            return trimmed.split(',').map((u:string )=> u.trim()).filter(Boolean);
-                                                                                            }
-                                                                                            return [];
-                                                                                            })();
+                                                                                             
+
+                                                                                          
+                                                                                        
+                                                                                    
+                                                                                        
+                                                                                    
+                                                                                        
+                                                                                            
+                                                                                    
+                                                                                            const splitUris = Array.isArray(safeMediaUris) ? safeMediaUris : [];
                                                                                             const totalCount = splitUris.length;
                                                                                             const visibleImages = isExpanded ? splitUris : splitUris.slice(0, 4);
                                                                                             const remainingCount = totalCount - 4;
+                                                                                            
+                                                                                          
+                                                                                            
+                                                                                        
+                                                                                    
 
                                                                                            
                                                                                             
@@ -1234,11 +1475,50 @@ const handleSendReply = (replyMessage?: string) => {
                                                                                                                                                                                                                                                                                                                                                                             setIsExpanded(true); 
                                                                                                                                                                                                                                                                                                                                                                                         }}
                                                                                                                                                                                                                                                                                                                                                                                                   >
+                                                                                                                                                                                                                                                                                                                                                                                                    return (
                                                                                                                                                                                                                                                                                                                                                                                                               <Image 
-                                                                                                                                                                                                                                                                                                                                                                                                                            source={{ uri: photoUrl }}
-                                                                                                                                                                                                                                                                                                                                                                                                                                          style={{ width: '100%', height: '100%', borderRadius: 4 }}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        resizeMode="cover"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    />
+                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                               source={{ 
+                                                                                                                                                                                                                                                                                                                                                                                                                                               uri: (() => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                 if (!photoUrl) return 'https://placeholder.com';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   return String(photoUrl).replace(/[\[\]\{\}\"\']/g, '').trim();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   })()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               style={[styles.gridImage, { width: '100%', height: '100%' }]} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             resizeMode="cover"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   );
+                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 {isLastVisibleItem && (
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <View 
@@ -1528,12 +1808,7 @@ const handleSendReply = (replyMessage?: string) => {
                                                         
                                                         
 
-        {/* Post text words with high contrast display visibility rule */}
-      {!editing && (
-          <Text style={[styles.postText, { color: '#000', fontSize: 16, fontWeight: '500', paddingHorizontal: 15, marginVertical: 8 }]}>
-              {typeof item?.text === 'object' ? String(JSON.stringify(item.text)) : (item?.text || "")}
-                </Text>
-                )}
+      
 
       
 

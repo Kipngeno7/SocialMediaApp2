@@ -132,6 +132,8 @@ export default function CreatePostScreen() {
   const CHARACTER_LIMIT = 10000;
   const [imageUris, setImageUris] = useState<string[]>([]);
   const [videoUris, setVideoUris] = useState<string[]>([]);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+
   const [videoThumbnails, setVideoThumbnails] = useState<{ [key: string]: string }>({});
   const [uploadProgress, setUploadProgress] = useState(0);
   const uploadFile = async (uri: string, folder: string): Promise<string | null> => {
@@ -423,7 +425,7 @@ const handleGoLive = async () => {
   // Submit post
   const submitPost = async () => {
     if (!selectedCategory) {
-      Alert.alert("Please select category");
+      setCategoryError("Please select the category first!");
       return;
     }
      if (selectedCategory && selectedCategory.toLowerCase().includes("other")) {
@@ -441,6 +443,8 @@ const handleGoLive = async () => {
                                             
                                               setCustomCategory(formattedCategory);
                                               }
+                                              setCategoryError(null);
+
       
 
         
@@ -588,6 +592,18 @@ const handleGoLive = async () => {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   } else if ((usePosts() as any).addPost) {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           (usePosts() as any).addPost(newPostData);
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    setPostText("");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        setSelectedCategory(null);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            setCustomCategory("");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                setImageUris([]);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    setVideoUris([]);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        setAudioUris([]);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            setHashtags("");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                setLocation("");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    setVisibility("public");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        setUploadProgress(0);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            setCategoryError(null);
+
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       // 6. Automatically route the user back to the feed to see it render live (PRESERVED LOGIC)
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             if (navigation.canGoBack()) {
@@ -645,6 +661,15 @@ const handleGoLive = async () => {
       {/* CATEGORY */}
       {/* CATEGORY */}
       <Text style={styles.sectionTitle}>Select Category:</Text>
+            {categoryError && (
+                      <View style={{ backgroundColor: '#ffebe6', padding: 10, borderRadius: 8, marginVertical: 6, borderWidth: 1, borderColor: '#ff4d4d' }}>
+                                <Text style={{ color: '#d93838', fontWeight: 'bold', fontSize: 13, textAlign: 'center' }}>
+                                            ⚠️ {categoryError}
+                                                      </Text>
+                                                              </View>
+                                                                    )}
+
+            
       <View style={styles.categoriesRow}>
         {Object.keys(CATEGORIES).map((key) => {
             const isSelected = selectedCategory === key;
@@ -652,7 +677,8 @@ const handleGoLive = async () => {
                 return (
                       <TouchableOpacity
                               key={key}
-                                      onPress={() => setSelectedCategory(key)}
+                                    onPress={() => { setSelectedCategory(key); setCategoryError(null); }}
+                                    
                                               style={{ 
                                                         padding: isSelected ? 3 : 0, // Outer spacing padding for rainbow border frame width
                                                                   borderRadius: 20, 
@@ -727,6 +753,7 @@ const handleGoLive = async () => {
                                  placeholderTextColor="#888"
                                        value={customCategory}
                                              onChangeText={setCustomCategory}
+                                             value={customCategory} 
                                                    autoCapitalize="words" // Automatically capitalizes the first letter of each word
                                                          style={[styles.input, { borderColor: '#ef476f', backgroundColor: '#fff5f5' }]}
                                                              />     
@@ -742,6 +769,7 @@ const handleGoLive = async () => {
         multiline
         value={postText}
         onChangeText={setPostText}
+        value={postText}
         maxLength={CHARACTER_LIMIT}
         textAlignVertical="top"
       />

@@ -1,94 +1,125 @@
-import database from '@react-native-firebase/database';
-import { auth } from '../firebaseConfig';
+import { auth } from '../firebaseConfig'; 
+import { 
+  getDatabase, 
+    ref, 
+      set, 
+        remove, 
+          push, 
+            runTransaction,
+              get,
+                query,
+                  orderByKey,
+                    orderByChild,
+                      startAt,
+                        endAt
+                        } from 'firebase/database';
 
-/* ===================== FOLLOW / UNFOLLOW ===================== */
+                        /* ===================== FOLLOW / UNFOLLOW ===================== */ 
 
-/* Follow user */
-export const followUser = async (targetUid: string) => {
-  const currentUid = auth.currentUser?.uid;
-  if (!currentUid) return;
+                        /* Follow user */ 
+                        export const followUser = async (targetUid: string) => { 
+                          const currentUid = auth.currentUser?.uid; 
+                            if (!currentUid) return; 
 
-  // Update followers / following nodes
-  await database().ref(`following/${currentUid}/${targetUid}`).set(true);
-  await database().ref(`followers/${targetUid}/${currentUid}`).set(true);
+                              const db = getDatabase();
 
-  // Update counters
-  const followerCountRef = database().ref(`users/${targetUid}/followersCount`);
-  const followingCountRef = database().ref(`users/${currentUid}/followingCount`);
-  followerCountRef.transaction((current) => (current || 0) + 1);
-  followingCountRef.transaction((current) => (current || 0) + 1);
+                                await set(ref(db, `following/${currentUid}/${targetUid}`), true); 
+                                  await set(ref(db, `followers/${targetUid}/${currentUid}`), true); 
 
-  // Add notification
-  const notifRef = database().ref(`notifications/${targetUid}`).push();
-  await notifRef.set({
-    type: 'follow',
-    from: currentUid,
-    timestamp: Date.now(),
-    read: false,
-  });
-};
+                                    const followerCountRef = ref(db, `users/${targetUid}/followersCount`); 
+                                      const followingCountRef = ref(db, `users/${currentUid}/followingCount`); 
 
-/* Unfollow user */
-export const unfollowUser = async (targetUid: string) => {
-  const currentUid = auth.currentUser?.uid;
-  if (!currentUid) return;
+                                        await runTransaction(followerCountRef, (current) => (current || 0) + 1);
+                                          await runTransaction(followingCountRef, (current) => (current || 0) + 1);
 
-  // Remove followers / following
-  await database().ref(`following/${currentUid}/${targetUid}`).remove();
-  await database().ref(`followers/${targetUid}/${currentUid}`).remove();
+                                            const notifListRef = ref(db, `notifications/${targetUid}`);
+                                              const newNotifRef = push(notifListRef); 
 
-  // Update counters
-  const followerCountRef = database().ref(`users/${targetUid}/followersCount`);
-  const followingCountRef = database().ref(`users/${currentUid}/followingCount`);
-  followerCountRef.transaction((current) => Math.max((current || 1) - 1, 0));
-  followingCountRef.transaction((current) => Math.max((current || 1) - 1, 0));
-};
+                                                await set(newNotifRef, { 
+                                                    type: 'follow', 
+                                                        from: currentUid, 
+                                                            timestamp: Date.now(), 
+                                                                read: false, 
+                                                                  }); 
+                                                                  }; 
 
-/* ===================== GET FOLLOWERS / FOLLOWING ===================== */
+                                                                  /* Unfollow user */ 
+                                                                  export const unfollowUser = async (targetUid: string) => { 
+                                                                    const currentUid = auth.currentUser?.uid; 
+                                                                      if (!currentUid) return; 
 
-/* Get followers */
-export const getFollowers = async (uid: string) => {
-  const snapshot = await database().ref(`followers/${uid}`).once('value');
-  return snapshot.val() || {};
-};
+                                                                        const db = getDatabase();
 
-/* Get following */
-export const getFollowing = async (uid: string) => {
-  const snapshot = await database().ref(`following/${uid}`).once('value');
-  return snapshot.val() || {};
-};
+                                                                          await remove(ref(db, `following/${currentUid}/${targetUid}`)); 
+                                                                            await remove(ref(db, `followers/${targetUid}/${currentUid}`)); 
 
-/* ===================== SEARCH USERS ===================== */
+                                                                              const followerCountRef = ref(db, `users/${targetUid}/followersCount`); 
+                                                                                const followingCountRef = ref(db, `users/${currentUid}/followingCount`); 
 
-/* Search users by username */
-export const searchUsers = async (query: string) => {
-  const snapshot = await database()
-    .ref('usernames')
-    .orderByKey()
-    .startAt(query)
-    .endAt(query + "\uf8ff")
-    .once('value');
+                                                                                  await runTransaction(followerCountRef, (current) => Math.max(0, (current || 0) - 1));
+                                                                                    await runTransaction(followingCountRef, (current) => Math.max(0, (current || 0) - 1));
+                                                                                    };
 
-  const data = snapshot.val() || {};
+                                                                                    /* ===================== GET FOLLOWERS / FOLLOWING ===================== */
 
-  // Map usernames to {username, uid}
-  return Object.keys(data).map((username) => ({ username, uid: data[username] }));
-};
+                                                                                    /* Get followers */
+                                                                                    export const getFollowers = async (uid: string) => {
+                                                                                      const db = getDatabase();
+                                                                                        const snapshot = await get(ref(db, `followers/${uid}`));
+                                                                                          return snapshot.val() || {};
+                                                                                          };
 
-/* ===================== NOTIFICATIONS ===================== */
+                                                                                          /* Get following */
+                                                                                          export const getFollowing = async (uid: string) => {
+                                                                                            const db = getDatabase();
+                                                                                              const snapshot = await get(ref(db, `following/${uid}`));
+                                                                                                return snapshot.val() || {};
+                                                                                                };
 
-/* Get notifications */
-export const getNotifications = async (uid: string) => {
-  const snapshot = await database()
-    .ref(`notifications/${uid}`)
-    .orderByChild('timestamp')
-    .once('value');
+                                                                                                /* ===================== SEARCH USERS ===================== */
 
-  const data = snapshot.val() || {};
-  return Object.entries(data).map(([id, notif]: any) => ({ id, ...notif }));
-};
+                                                                                                /* Search users by username */
+                                                                                                export const searchUsers = async (textQuery: string) => {
+                                                                                                  const db = getDatabase();
+                                                                                                    const usernamesRef = ref(db, 'usernames');
+                                                                                                      
+                                                                                                        // Create a clean Firebase query builder sequence
+                                                                                                          const searchRules = query(
+                                                                                                              usernamesRef, 
+                                                                                                                  orderByKey(), 
+                                                                                                                      startAt(textQuery), 
+                                                                                                                          endAt(textQuery + "\uf8ff")
+                                                                                                                            );
+                                                                                                                              
+                                                                                                                                const snapshot = await get(searchRules);
+                                                                                                                                  const data = snapshot.val() || {};
 
-/* Mark notification as read */
-export const markAsRead = async (uid: string, notifId: string) => {
-  await database().ref(`notifications/${uid}/${notifId}/read`).set(true);
-};
+                                                                                                                                    return Object.keys(data).map((username) => ({
+                                                                                                                                        username,
+                                                                                                                                            uid: data[username]
+                                                                                                                                              }));
+                                                                                                                                              };
+
+                                                                                                                                              /* ===================== NOTIFICATIONS ===================== */
+
+                                                                                                                                              /* Get notifications */
+                                                                                                                                              export const getNotifications = async (uid: string) => {
+                                                                                                                                                const db = getDatabase();
+                                                                                                                                                  const notifRef = ref(db, `notifications/${uid}`);
+                                                                                                                                                    
+                                                                                                                                                      const searchRules = query(notifRef, orderByChild('timestamp'));
+                                                                                                                                                        const snapshot = await get(searchRules);
+                                                                                                                                                          const data = snapshot.val() || {};
+
+                                                                                                                                                            return Object.entries(data).map(([id, notif]: [string, any]) => ({
+                                                                                                                                                                id,
+                                                                                                                                                                    ...notif
+                                                                                                                                                                      }));
+                                                                                                                                                                      };
+
+                                                                                                                                                                      /* Mark notification as read */
+                                                                                                                                                                      export const markAsRead = async (uid: string, notifId: string) => {
+                                                                                                                                                                        const db = getDatabase();
+                                                                                                                                                                          await set(ref(db, `notifications/${uid}/${notifId}/read`), true);
+                                                                                                                                                                          };
+                                                                                                                                                                          

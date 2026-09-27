@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useNavigation } from "expo-router/react-navigation";
+
 import { auth } from '../firebaseConfig';
 import {supabase} from '../config/supabase';
 import { getDatabase, ref, push } from 'firebase/database';
 
-export default function SettingsScreen() {
-  const navigation = useNavigation<any>();
+export default function SettingsScreen({ navigation }: any) {
+  
     const [showTerms, setShowTerms] = useState(false);
 
       /* VERIFICATION REQUEST FUNCTION */
@@ -54,7 +54,7 @@ export default function SettingsScreen() {
 
                                                                                                                                                                                                                                   <TouchableOpacity
                                                                                                                                                                                                                                           style={styles.item}
-                                                                                                                                                                                                                                                  onPress={() => navigation.navigate('HelpCenter')}
+                                                                                                                                                                                                                                                  onPress={() => navigation.navigate('HelpCenterScreen')}
                                                                                                                                                                                                                                                         >
                                                                                                                                                                                                                                                                 <Text style={styles.text}>Help / Support</Text>
                                                                                                                                                                                                                                                                       </TouchableOpacity>

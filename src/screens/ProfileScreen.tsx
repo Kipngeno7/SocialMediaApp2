@@ -60,22 +60,71 @@ export default function ProfileScreen() {
   useEffect(() => {
     let unsubscribeFollowers: Unsubscribe | null = null;
     let unsubscribeFollowing: Unsubscribe | null = null;
-
     const fetchData = async () => {
-      setLoading(true);
+            // 1. Instantly trigger loading state
+                  setLoading(true);
+                        
+                              try {
+                                      // 2. Fetch the user's posts
+                                              const userPostsResponse = await getUserPosts(userId);
+                                                      const userPosts = [
+                                                                ...(userPostsResponse.firebase ?? []),
+                                                                          ...(userPostsResponse.supabase ?? []),
+                                                                                  ];
+                                                                                          setPosts(userPosts);
+                                                                                                } catch (error) {
+                                                                                                        console.error("Error fetching posts:", error);
+                                                                                                              }
+
+                                                                                                                    // 3. Fallback tracking variable to ensure the profile loads instantly
+                                                                                                                          const targetUid = userId || auth.currentUser?.uid;
+
+                                                                                                                                if (targetUid) {
+                                                                                                                                        const userRef = ref(database, 'users/' + targetUid);
+                                                                                                                                                onValue(userRef, (snapshot) => {
+                                                                                                                                                          const data = snapshot.val();
+                                                                                                                                                                    if (data) {
+                                                                                                                                                                                setUser({
+                                                                                                                                                                                              fullName: data.fullName || 'Registered User',
+                                                                                                                                                                                                            username: data.username || 'username',
+                                                                                                                                                                                                                          photo: data.photo || '', 
+                                                                                                                                                                                                                                        bio: data.bio || ''
+                                                                                                                                                                                                                                                    });
+                                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                                                        // 4. Force loading to stop immediately when snapshot returns
+                                                                                                                                                                                                                                                                                  setLoading(false);
+                                                                                                                                                                                                                                                                                          }, (error) => {
+                                                                                                                                                                                                                                                                                                    console.error("Firebase Read Error:", error);
+                                                                                                                                                                                                                                                                                                              setLoading(false);
+                                                                                                                                                                                                                                                                                                                      }, { onlyOnce: true });
+                                                                                                                                                                                                                                                                                                                            } else {
+                                                                                                                                                                                                                                                                                                                                    // 5. Emergency fallback if no valid user ID can be parsed
+                                                                                                                                                                                                                                                                                                                                            setLoading(false);
+                                                                                                                                                                                                                                                                                                                                                  }
+    
+                                          
+                                                    
+                                                          
+                                                          
+                                                          
+                                                                    
+                                                                        
+                                                                  
+                                                                      
+                                                                          
+                                                                          
+                                                                                              
+                                                                                                
+                                                                                                        
+                                                                                                                    
+                                                                                                                            
+                                                                                                                                      
+                                                                                                                                                    
+                                                                                                                                                    
+                                                                                                                                                          
+                                                                                                                                                                    
+                                                                                                                                                                    
       
-      // Profile data and posts
-      const userData = await getUserById(userId);
-      const userPostsResponse = await getUserPosts(userId);
-
-      const userPosts = [
-        ...(userPostsResponse.firebase ?? []),
-        ...(userPostsResponse.supabase ?? []),
-      ];
-
-      setUser(userData);
-      setPosts(userPosts);
-      setLoading(false);
 
       const followersRef = ref(database, `followers/${userId}`);
       unsubscribeFollowers = onValue(followersRef, (snapshot: DataSnapshot) => {
@@ -170,20 +219,28 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
 
                         {/* Message Button - Using TouchOpacity instead of Button to fix casing */}
-                   <TouchableOpacity
-                     style={styles.customMessageButton}
-                       onPress={() => {
-                           // If the userId from route parameters is empty, fall back safely
-                               const targetUserId = route.params?.userId || userId;
-                                   if (!targetUserId) {
-                                         alert("Error: Cannot find this user's ID to start a chat.");
-                                               return;
-                                                   }
-                                                       navigation.navigate('Chat', { otherUserId: targetUserId });
-                                                         }}
-                                                         >
-                                                           <Text style={styles.messageButtonText}>Message</Text>
-                                                           </TouchableOpacity>    
+              <TouchableOpacity
+                style={styles.customMessageButton}
+                  onPress={() => {
+                      // Resolve valid ID from parameters or state user tracking context
+                          const chatTargetId = route.params?.userId || userId || auth.currentUser?.uid;
+
+                                  if (!chatTargetId) {
+                                        console.error("Navigation Error: otherUserId is invalid or empty");
+                                              alert("Could not start chat: User ID is missing.");
+                                                    return;
+                                                        }
+
+                                                                // Direct link navigating into your active navigation router stack name
+                                                                    navigation.navigate('Chat', { otherUserId: chatTargetId });
+                                                                      }}
+                                                                      >
+                                                                        <Text style={styles.messageButtonText}>Message</Text>
+                                                                        </TouchableOpacity> 
+                                            
+                                                      
+                                                        
+                                                 
 
           {/* Block / Unblock Button */}
           <TouchableOpacity

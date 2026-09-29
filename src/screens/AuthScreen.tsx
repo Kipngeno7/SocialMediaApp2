@@ -717,4 +717,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// End of AuthScreen
+

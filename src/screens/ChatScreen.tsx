@@ -26,13 +26,12 @@ import { Audio } from 'expo-av';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next'; // <-- i18next import
 
-interface ChatScreenProps {
-  route: { params: { otherUserId: string } };
-}
+export default function ChatScreen({ route }: any) {
+    // Safely extract otherUserId with a fallback empty string to prevent crashes
+      const otherUserId = route?.params?.otherUserId || '';
+        
+          const [chatId, setChatId] = useState<string>('');
 
-export default function ChatScreen({ route }: ChatScreenProps) {
-  const { otherUserId } = route.params;
-  const [chatId, setChatId] = useState<string>('');
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState('');
   const [recording, setRecording] = useState<Audio.Recording | null>(null);

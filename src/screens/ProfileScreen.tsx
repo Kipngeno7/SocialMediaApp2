@@ -37,9 +37,8 @@ type UserProfileRouteProp = RouteProp<RootStackParamList, 'UserProfile'>;
 
 export default function ProfileScreen() {
   const route = useRoute<UserProfileRouteProp>();
-  
-  // FIXED: Safely check if route.params exists; otherwise fallback to your own logged-in UID
-  const userId = route.params?.userId || auth.currentUser?.uid || '';
+  const routeParams: { userId?: string } = route.params ?? {};
+  const userId: string = routeParams.userId ?? auth.currentUser?.uid ?? '';
 
   const { t } = useTranslation();
 
@@ -61,78 +60,49 @@ export default function ProfileScreen() {
     let unsubscribeFollowers: Unsubscribe | null = null;
     let unsubscribeFollowing: Unsubscribe | null = null;
     const fetchData = async () => {
-            // 1. Instantly trigger loading state
-                  setLoading(true);
-                        
-                              try {
-                                      // 2. Fetch the user's posts
-                                              const userPostsResponse = await getUserPosts(userId);
-                                                      const userPosts = [
-                                                                ...(userPostsResponse.firebase ?? []),
-                                                                          ...(userPostsResponse.supabase ?? []),
-                                                                                  ];
-                                                                                          setPosts(userPosts);
-                                                                                                } catch (error) {
-                                                                                                        console.error("Error fetching posts:", error);
-                                                                                                              }
+      setLoading(true);
 
-                                                                                                                    // 3. Fallback tracking variable to ensure the profile loads instantly
-                                                                                                                          const targetUid = userId || auth.currentUser?.uid;
+      try {
+        const userPostsResponse = await getUserPosts(userId);
+        setPosts([
+          ...(userPostsResponse.firebase ?? []),
+          ...(userPostsResponse.supabase ?? []),
+        ]);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
 
-                                                                                                                                if (targetUid) {
-                                                                                                                                        const userRef = ref(database, 'users/' + targetUid);
-                                                                                                                                                onValue(userRef, (snapshot) => {
-                                                                                                                                                          const data = snapshot.val();
-                                                                                                                                                                    if (data) {
-                                                                                                                                                                                setUser({
-                                                                                                                                                                                              fullName: data.fullName || 'Registered User',
-                                                                                                                                                                                                            username: data.username || 'username',
-                                                                                                                                                                                                                          photo: data.photo || '', 
-                                                                                                                                                                                                                                        bio: data.bio || ''
-                                                                                                                                                                                                                                                    });
-                                                                                                                                                                                                                                                              }
-                                                                                                                                                                                                                                                                        // 4. Force loading to stop immediately when snapshot returns
-                                                                                                                                                                                                                                                                                  setLoading(false);
-                                                                                                                                                                                                                                                                                          }, (error) => {
-                                                                                                                                                                                                                                                                                                    console.error("Firebase Read Error:", error);
-                                                                                                                                                                                                                                                                                                              setLoading(false);
-                                                                                                                                                                                                                                                                                                                      }, { onlyOnce: true });
-                                                                                                                                                                                                                                                                                                                            } else {
-                                                                                                                                                                                                                                                                                                                                    // 5. Emergency fallback if no valid user ID can be parsed
-                                                                                                                                                                                                                                                                                                                                            setLoading(false);
-                                                                                                                                                                                                                                                                                                                                                  }
-    
-                                          
-                                                    
-                                                          
-                                                          
-                                                          
-                                                                    
-                                                                        
-                                                                  
-                                                                      
-                                                                          
-                                                                          
-                                                                                              
-                                                                                                
-                                                                                                        
-                                                                                                                    
-                                                                                                                            
-                                                                                                                                      
-                                                                                                                                                    
-                                                                                                                                                    
-                                                                                                                                                          
-                                                                                                                                                                    
-                                                                                                                                                                    
-      
+      const targetUid = userId || auth.currentUser?.uid;
+      if (targetUid) {
+        setLoading(false);
+        return;
+      }
 
-      const followersRef = ref(database, `followers/${userId}`);
+      const userRef = ref(database, `users/${targetUid}`);
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          console.log('REAL FIREBASE DATA CONTENT IS:', data);
+          setUser({
+            fullName: data.fullName || 'Registered User',
+            username: data.username || 'username',
+            photo: data.photo || '',
+            bio: data.bio || '',
+          });
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error('Firebase Read Error:', error);
+        setLoading(false);
+      }, { onlyOnce: true });
+
+      const followersRef = ref(database, `followers/${targetUid}`);
       unsubscribeFollowers = onValue(followersRef, (snapshot: DataSnapshot) => {
         const data = snapshot.val() || {};
         setFollowers(data);
       });
 
-      const followingRef = ref(database, `following/${userId}`);
+      const followingRef = ref(database, `following/${targetUid}`);
       unsubscribeFollowing = onValue(followingRef, (snapshot: DataSnapshot) => {
         const data = snapshot.val() || {};
         setFollowing(data);
@@ -186,7 +156,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         {/* 1. Profile Picture placeholder and user display names */}
         <Image
-          source={{ uri: user?.photo || 'https://placeholder.com' }} // Changed avatar to photo
+          source={{ uri: user?.photo || 'https://placeholder.com' }}
             style={styles.avatar}
             />
             <Text style={styles.name}>{user?.fullName || 'No Name'}</Text>      {/* Changed name to fullName */}
